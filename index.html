@@ -1,0 +1,3462 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Petualangan Logika - Game Berpikir Komputasional</title>
+    <!-- Memuat Tailwind CSS untuk tata letak responsif dan modern -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Memuat Font Google: Fredoka untuk judul ceria & Plus Jakarta Sans untuk teks yang sangat terbaca -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Memuat Canvas Confetti untuk perayaan kemenangan -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+    <style>
+        /* Pengaturan Font Global */
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 50%, #fefce8 100%);
+            min-height: 100vh;
+            overflow-x: hidden;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        h1, h2, h3, .font-display {
+            font-family: 'Fredoka', sans-serif;
+        }
+
+        /* Animasi Kustom untuk Interaksi Game */
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-6px); }
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            20%, 60% { transform: translateX(-8px); }
+            40%, 80% { transform: translateX(8px); }
+        }
+
+        @keyframes popIn {
+            0% { transform: scale(0.85); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        .animate-float {
+            animation: float 3s ease-in-out infinite;
+        }
+
+        .animate-shake {
+            animation: shake 0.45s cubic-bezier(.36,.07,.19,.97) both;
+        }
+
+        .animate-pop {
+            animation: popIn 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+
+        /* Gaya Kartu Item yang Dapat Diseret */
+        .sortable-card {
+            transition: transform 0.22s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.22s ease, border-color 0.2s ease;
+            cursor: grab;
+            touch-action: manipulation;
+        }
+
+        .sortable-card:active {
+            cursor: grabbing;
+        }
+
+        .sortable-card.dragging {
+            opacity: 0.45;
+            transform: scale(0.95);
+            border-style: dashed;
+        }
+
+        .sortable-card.drag-over {
+            transform: scale(1.04);
+            border-color: #3b82f6;
+            background-color: #eff6ff;
+        }
+
+        .sortable-card.selected-swap {
+            transform: translateY(-8px) scale(1.03);
+            border-color: #f59e0b !important;
+            box-shadow: 0 12px 24px -6px rgba(245, 158, 11, 0.35);
+            background-color: #fffbeb;
+        }
+
+        /* Tombol 3D Gaya Game Edukasi */
+        .btn-game {
+            transition: all 0.15s ease;
+            box-shadow: 0 4px 0 rgba(0, 0, 0, 0.18);
+        }
+
+        .btn-game:active:not(:disabled) {
+            transform: translateY(3px);
+            box-shadow: 0 1px 0 rgba(0, 0, 0, 0.18);
+        }
+
+        /* Scrollbar halus untuk kontainer kereta horizontal di layar HP kecil */
+        .train-scroll::-webkit-scrollbar {
+            height: 8px;
+        }
+        .train-scroll::-webkit-scrollbar-track {
+            background: #e2e8f0;
+            border-radius: 999px;
+        }
+        .train-scroll::-webkit-scrollbar-thumb {
+            background: #94a3b8;
+            border-radius: 999px;
+        }
+
+        /* Animasi Khusus Bab 3 (Ketik Cepat & Karakter Pac-Man) */
+        @keyframes chomp {
+            0%, 100% { transform: rotate(0deg); }
+            50% { transform: rotate(-18deg); }
+        }
+
+        @keyframes chompBottom {
+            0%, 100% { transform: rotate(0deg); }
+            50% { transform: rotate(18deg); }
+        }
+
+        @keyframes hitFlash {
+            0%, 100% { filter: drop-shadow(0 6px 12px rgba(234, 179, 8, 0.35)); transform: scale(1); }
+            25%, 75% { filter: drop-shadow(0 0 18px rgba(239, 68, 68, 0.9)) hue-rotate(-35deg) saturate(2); transform: scale(0.92); }
+        }
+
+        @keyframes wordBlast {
+            0% { transform: translate(-50%, 0) scale(1); opacity: 1; }
+            100% { transform: translate(-50%, -24px) scale(1.35); opacity: 0; }
+        }
+
+        .pacman-hit {
+            animation: hitFlash 0.45s ease-in-out;
+        }
+
+        .word-blast {
+            animation: wordBlast 0.28s ease-out forwards;
+            pointer-events: none;
+        }
+
+        /* Gaya Blok Perintah Visual Ala Blockly (Bab 4) */
+        .blockly-piece {
+            position: relative;
+            clip-path: polygon(
+                0% 4px, 14px 4px, 19px 9px, 31px 9px, 36px 4px, 100% 4px,
+                100% calc(100% - 5px), 36px calc(100% - 5px), 31px 100%, 19px 100%, 14px calc(100% - 5px), 0% calc(100% - 5px)
+            );
+            transition: transform 0.14s ease, filter 0.14s ease;
+        }
+
+        .blockly-piece:hover:not(:disabled) {
+            filter: brightness(1.06);
+        }
+
+        .blockly-active-exec {
+            outline: 3px solid #facc15;
+            box-shadow: 0 0 18px rgba(250, 204, 21, 0.75);
+            transform: scale(1.03);
+            z-index: 10;
+        }
+
+        /* Latar Geometris Warna-Warni Ala Kartu Susun Kata (Bab 5) */
+        .sentence-stage-bg {
+            background:
+                linear-gradient(135deg, rgba(217, 70, 239, 0.78) 0%, rgba(129, 140, 248, 0.78) 45%, rgba(52, 211, 153, 0.82) 100%),
+                repeating-linear-gradient(60deg, rgba(255,255,255,0.14) 0px, rgba(255,255,255,0.14) 18px, transparent 18px, transparent 36px),
+                repeating-linear-gradient(-60deg, rgba(15,23,42,0.08) 0px, rgba(15,23,42,0.08) 18px, transparent 18px, transparent 36px);
+        }
+
+        .word-tile {
+            transition: transform 0.16s ease, box-shadow 0.16s ease, background-color 0.16s ease;
+            cursor: grab;
+            touch-action: manipulation;
+        }
+
+        .word-tile:active {
+            cursor: grabbing;
+        }
+
+        .word-tile.selected-word {
+            outline: 3px solid #facc15;
+            transform: translateY(-4px) scale(1.05);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.35);
+        }
+    </style>
+</head>
+<body class="text-slate-800 flex flex-col">
+
+    <!-- NAVBAR / HEADER ATAS -->
+    <header class="sticky top-0 z-30 bg-white/90 backdrop-blur-md border-b border-sky-100 shadow-sm">
+        <div class="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between gap-2">
+            <!-- Logo & Judul -->
+            <button onclick="navigateTo('map')" class="flex items-center gap-2.5 text-left group focus:outline-none">
+                <div class="w-10 h-10 rounded-2xl bg-gradient-to-br from-sky-500 to-indigo-600 flex items-center justify-center text-white shadow-md group-hover:scale-105 transition-transform">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2.3" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                    </svg>
+                </div>
+                <div>
+                    <h1 class="text-lg sm:text-xl font-bold text-slate-800 leading-tight">Petualangan Logika</h1>
+                    <p class="text-[11px] sm:text-xs font-medium text-sky-600">Tantangan Berpikir Komputasional</p>
+                </div>
+            </button>
+
+            <!-- Statistik Pemain (Bintang, Skor, Tombol Suara) -->
+            <div class="flex items-center gap-2 sm:gap-3">
+                <!-- Indikator Bintang -->
+                <div class="flex items-center gap-1.5 bg-amber-50 border border-amber-200 px-3 py-1.5 rounded-full shadow-xs" title="Total Bintang Terkumpul">
+                    <span class="text-amber-500 text-base sm:text-lg">⭐</span>
+                    <span id="header-stars" class="font-display font-bold text-amber-700 text-sm sm:text-base">0/75</span>
+                </div>
+
+                <!-- Indikator Skor -->
+                <div class="hidden sm:flex items-center gap-1.5 bg-emerald-50 border border-emerald-200 px-3 py-1.5 rounded-full shadow-xs" title="Total Skor">
+                    <span class="text-emerald-600 text-base">🏆</span>
+                    <span id="header-score" class="font-display font-bold text-emerald-700 text-base">0</span>
+                </div>
+
+                <!-- Toggle Audio -->
+                <button id="btn-sound" onclick="toggleSound()" class="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 transition-colors" title="Suara Efek">
+                    <svg id="icon-sound-on" class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
+                    </svg>
+                    <svg id="icon-sound-off" class="w-5 h-5 hidden text-rose-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15zM17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2" />
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- KONTEN UTAMA -->
+    <main class="flex-grow max-w-6xl w-full mx-auto px-4 py-6 sm:py-8">
+
+        <!-- =========================================================
+             VIEW 1: PETA LEVEL (BERANDA)
+             ========================================================= -->
+        <section id="view-map" class="animate-pop">
+            <!-- Hero Banner -->
+            <div class="bg-gradient-to-r from-indigo-600 via-sky-600 to-cyan-500 rounded-3xl p-6 sm:p-8 text-white shadow-xl mb-8 relative overflow-hidden">
+                <div class="relative z-10 max-w-2xl">
+                    <span class="inline-block bg-white/20 backdrop-blur-xs text-xs sm:text-sm font-bold px-3 py-1 rounded-full mb-3">
+                        🚀 5 Bab Bebas Pilih • 25 Level Seru
+                    </span>
+                    <h2 class="text-2xl sm:text-4xl font-bold mb-2 leading-tight">Asah Logikamu Seperti Ilmuwan Komputer!</h2>
+                    <p class="text-sky-100 text-sm sm:text-base mb-5 leading-relaxed">
+                        Kamu bebas memulai petualangan dari <strong>Bab 1</strong>, <strong>Bab 2</strong>, <strong>Bab 3</strong>, <strong>Bab 4</strong>, maupun langsung menyusun blok kata di <strong>Bab 5</strong>! Kumpulkan semua bintang untuk menjadi Master Berpikir Komputasional.
+                    </p>
+                    <div class="flex flex-wrap items-center gap-3">
+                        <button onclick="playNextUnlocked()" class="btn-game bg-amber-400 hover:bg-amber-300 text-slate-900 font-display font-bold px-6 py-3 rounded-2xl text-base flex items-center gap-2">
+                            <span>▶ Lanjutkan Bermain</span>
+                        </button>
+                        <div class="bg-white/15 backdrop-blur-xs px-4 py-2.5 rounded-2xl text-sm font-semibold">
+                            Progres: <span id="map-progress-text" class="font-bold text-amber-300">0 / 25 Level</span>
+                        </div>
+                    </div>
+                </div>
+                <!-- Dekorasi Latar -->
+                <div class="hidden md:flex absolute right-8 bottom-4 top-4 items-center opacity-90 pointer-events-none">
+                    <svg class="w-44 h-44 animate-float" viewBox="0 0 200 200" fill="none">
+                        <circle cx="100" cy="100" r="85" fill="white" fill-opacity="0.12"/>
+                        <rect x="45" y="95" width="22" height="65" rx="6" fill="#FDE047"/>
+                        <rect x="77" y="65" width="22" height="95" rx="6" fill="#38BDF8"/>
+                        <rect x="109" y="40" width="22" height="120" rx="6" fill="#FB7185"/>
+                        <rect x="141" y="78" width="22" height="82" rx="6" fill="#4ADE80"/>
+                    </svg>
+                </div>
+            </div>
+
+            <!-- DAFTAR BAB -->
+            <div class="space-y-8">
+                <!-- BAB 1 -->
+                <div class="bg-white rounded-3xl p-5 sm:p-7 shadow-md border border-sky-100">
+                    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-5 mb-5 border-b border-slate-100">
+                        <div class="flex items-center gap-3">
+                            <div class="w-12 h-12 rounded-2xl bg-sky-100 text-sky-600 flex items-center justify-center font-display font-bold text-xl shrink-0">
+                                01
+                            </div>
+                            <div>
+                                <h3 class="text-xl sm:text-2xl font-bold text-slate-800">Bab 1: Pengurutan & Klasifikasi</h3>
+                                <p class="text-slate-500 text-xs sm:text-sm">Bandingkan ukuran dan urutkan objek dari yang terkecil hingga terbesar.</p>
+                            </div>
+                        </div>
+                        <div class="flex flex-wrap items-center gap-2.5 self-start md:self-center">
+                            <span id="chap1-badge" class="bg-sky-50 text-sky-700 font-bold text-xs px-3 py-1.5 rounded-full border border-sky-200">
+                                0/5 Selesai
+                            </span>
+                            <button onclick="startChapter(1)" class="btn-game bg-sky-600 hover:bg-sky-500 text-white font-display font-bold text-xs sm:text-sm px-4 py-2 rounded-xl flex items-center gap-1.5">
+                                <span>▶ Mulai Bab 1</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Grid Level Bab 1 -->
+                    <div id="grid-chapter-1" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+                        <!-- Diisi otomatis via JavaScript -->
+                    </div>
+                </div>
+
+                <!-- BAB 2 -->
+                <div class="bg-white rounded-3xl p-5 sm:p-7 shadow-md border border-indigo-100">
+                    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-5 mb-5 border-b border-slate-100">
+                        <div class="flex items-center gap-3">
+                            <div class="w-12 h-12 rounded-2xl bg-indigo-100 text-indigo-600 flex items-center justify-center font-display font-bold text-xl shrink-0">
+                                02
+                            </div>
+                            <div>
+                                <h3 class="text-xl sm:text-2xl font-bold text-slate-800">Bab 2: Pola & Logika Susunan</h3>
+                                <p class="text-slate-500 text-xs sm:text-sm">Temukan aturan tersembunyi pada muatan kereta dan lengkapi gerbong terakhir.</p>
+                            </div>
+                        </div>
+                        <div class="flex flex-wrap items-center gap-2.5 self-start md:self-center">
+                            <span id="chap2-badge" class="bg-indigo-50 text-indigo-700 font-bold text-xs px-3 py-1.5 rounded-full border border-indigo-200">
+                                0/5 Selesai
+                            </span>
+                            <button onclick="startChapter(2)" class="btn-game bg-indigo-600 hover:bg-indigo-500 text-white font-display font-bold text-xs sm:text-sm px-4 py-2 rounded-xl flex items-center gap-1.5">
+                                <span>▶ Mulai Bab 2</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Grid Level Bab 2 -->
+                    <div id="grid-chapter-2" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+                        <!-- Diisi otomatis via JavaScript -->
+                    </div>
+                </div>
+
+                <!-- BAB 3 -->
+                <div class="bg-white rounded-3xl p-5 sm:p-7 shadow-md border border-amber-200/80">
+                    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-5 mb-5 border-b border-slate-100">
+                        <div class="flex items-center gap-3">
+                            <div class="w-12 h-12 rounded-2xl bg-amber-100 text-amber-600 flex items-center justify-center font-display font-bold text-xl shrink-0">
+                                03
+                            </div>
+                            <div>
+                                <h3 class="text-xl sm:text-2xl font-bold text-slate-800">Bab 3: Kecepatan & Ketepatan Mengetik</h3>
+                                <p class="text-slate-500 text-xs sm:text-sm">Ketik kata yang jatuh dengan tepat sebelum mengenai karakter kuning!</p>
+                            </div>
+                        </div>
+                        <div class="flex flex-wrap items-center gap-2.5 self-start md:self-center">
+                            <span id="chap3-badge" class="bg-amber-50 text-amber-700 font-bold text-xs px-3 py-1.5 rounded-full border border-amber-200">
+                                0/5 Selesai
+                            </span>
+                            <button onclick="startChapter(3)" class="btn-game bg-amber-500 hover:bg-amber-400 text-slate-900 font-display font-bold text-xs sm:text-sm px-4 py-2 rounded-xl flex items-center gap-1.5">
+                                <span>▶ Mulai Bab 3</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Grid Level Bab 3 -->
+                    <div id="grid-chapter-3" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+                        <!-- Diisi otomatis via JavaScript -->
+                    </div>
+                </div>
+
+                <!-- BAB 4 -->
+                <div class="bg-white rounded-3xl p-5 sm:p-7 shadow-md border border-purple-200/80">
+                    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-5 mb-5 border-b border-slate-100">
+                        <div class="flex items-center gap-3">
+                            <div class="w-12 h-12 rounded-2xl bg-purple-100 text-purple-600 flex items-center justify-center font-display font-bold text-xl shrink-0">
+                                04
+                            </div>
+                            <div>
+                                <h3 class="text-xl sm:text-2xl font-bold text-slate-800">Bab 4: Pemrograman Visual Labirin</h3>
+                                <p class="text-slate-500 text-xs sm:text-sm">Susun blok-blok perintah untuk memandu karakter keluar dari labirin menuju pin tujuan.</p>
+                            </div>
+                        </div>
+                        <div class="flex flex-wrap items-center gap-2.5 self-start md:self-center">
+                            <span id="chap4-badge" class="bg-purple-50 text-purple-700 font-bold text-xs px-3 py-1.5 rounded-full border border-purple-200">
+                                0/5 Selesai
+                            </span>
+                            <button onclick="startChapter(4)" class="btn-game bg-purple-600 hover:bg-purple-500 text-white font-display font-bold text-xs sm:text-sm px-4 py-2 rounded-xl flex items-center gap-1.5">
+                                <span>▶ Mulai Bab 4</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Grid Level Bab 4 -->
+                    <div id="grid-chapter-4" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+                        <!-- Diisi otomatis via JavaScript -->
+                    </div>
+                </div>
+
+                <!-- BAB 5 -->
+                <div class="bg-white rounded-3xl p-5 sm:p-7 shadow-md border border-fuchsia-200/80">
+                    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-5 mb-5 border-b border-slate-100">
+                        <div class="flex items-center gap-3">
+                            <div class="w-12 h-12 rounded-2xl bg-fuchsia-100 text-fuchsia-600 flex items-center justify-center font-display font-bold text-xl shrink-0">
+                                05
+                            </div>
+                            <div>
+                                <h3 class="text-xl sm:text-2xl font-bold text-slate-800">Bab 5: Menyusun Blok Kata</h3>
+                                <p class="text-slate-500 text-xs sm:text-sm">Urutkan blok-blok kata acak menjadi kalimat bahasa Indonesia yang padu dan benar.</p>
+                            </div>
+                        </div>
+                        <div class="flex flex-wrap items-center gap-2.5 self-start md:self-center">
+                            <span id="chap5-badge" class="bg-fuchsia-50 text-fuchsia-700 font-bold text-xs px-3 py-1.5 rounded-full border border-fuchsia-200">
+                                0/5 Selesai
+                            </span>
+                            <button onclick="startChapter(5)" class="btn-game bg-fuchsia-600 hover:bg-fuchsia-500 text-white font-display font-bold text-xs sm:text-sm px-4 py-2 rounded-xl flex items-center gap-1.5">
+                                <span>▶ Mulai Bab 5</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Grid Level Bab 5 -->
+                    <div id="grid-chapter-5" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+                        <!-- Diisi otomatis via JavaScript -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Footer Kontrol Progres -->
+            <div class="mt-8 flex flex-col sm:flex-row items-center justify-between gap-4 bg-white/70 rounded-2xl p-4 border border-slate-200/70">
+                <p class="text-xs sm:text-sm text-slate-500 text-center sm:text-left">
+                    Progres permainan otomatis tersimpan di perangkat ini.
+                </p>
+                <button onclick="openResetModal()" class="text-xs sm:text-sm font-semibold text-rose-600 hover:text-rose-700 bg-rose-50 hover:bg-rose-100 px-4 py-2 rounded-xl transition-colors">
+                    🔄 Reset Semua Progres
+                </button>
+            </div>
+        </section>
+
+        <!-- =========================================================
+             VIEW 2: ARENA PERMAINAN (LEVEL VIEW)
+             ========================================================= -->
+        <section id="view-game" class="hidden animate-pop">
+            <!-- Navigasi Atas Level -->
+            <div class="flex flex-wrap items-center justify-between gap-3 mb-5">
+                <button onclick="navigateTo('map')" class="btn-game bg-white hover:bg-slate-50 text-slate-700 font-bold px-4 py-2.5 rounded-2xl border border-slate-200 text-sm flex items-center gap-2">
+                    <span>⬅ Peta Level</span>
+                </button>
+
+                <div class="flex items-center gap-2">
+                    <span id="game-chapter-pill" class="bg-sky-100 text-sky-800 font-bold text-xs px-3 py-1.5 rounded-full">
+                        Bab 1
+                    </span>
+                    <span id="game-level-indicator" class="bg-slate-800 text-white font-display font-bold text-xs sm:text-sm px-3.5 py-1.5 rounded-full">
+                        Level 1 / 25
+                    </span>
+                </div>
+            </div>
+
+            <!-- Kartu Utama Soal -->
+            <div class="bg-white rounded-3xl shadow-lg border border-slate-200/80 overflow-hidden">
+                <!-- Header Soal -->
+                <div class="bg-gradient-to-r from-slate-800 to-slate-900 text-white p-5 sm:p-6">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                        <div>
+                            <h2 id="game-title" class="text-xl sm:text-2xl font-bold text-amber-300">Judul Level</h2>
+                            <p id="game-instruction" class="text-slate-200 text-sm sm:text-base mt-1 leading-relaxed">
+                                Instruksi permainan akan muncul di sini.
+                            </p>
+                        </div>
+                        <div id="header-attempts-badge" class="flex items-center gap-1 bg-white/10 px-3 py-1.5 rounded-xl self-start sm:self-center shrink-0">
+                            <span class="text-xs text-slate-300 mr-1">Percobaan:</span>
+                            <span id="game-attempts" class="font-display font-bold text-amber-300">1</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Area Kerja Interaktif (Dinamis sesuai Bab 1, Bab 2, Bab 3, atau Bab 4) -->
+                <div id="game-workspace" class="p-4 sm:p-7 bg-slate-50/60">
+                    <!-- Konten visual level dirender di sini -->
+                </div>
+
+                <!-- Panel Umpan Balik (Feedback) -->
+                <div id="feedback-box" class="hidden mx-4 sm:mx-7 mb-5 p-4 sm:p-5 rounded-2xl border-2 transition-all">
+                    <div class="flex items-start gap-3">
+                        <div id="feedback-icon" class="text-2xl sm:text-3xl shrink-0 mt-0.5">✅</div>
+                        <div class="flex-grow">
+                            <h4 id="feedback-title" class="font-display font-bold text-lg">Luar Biasa!</h4>
+                            <p id="feedback-message" class="text-sm sm:text-base mt-1 leading-relaxed"></p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Bar Tombol Aksi Bawah -->
+                <div id="game-bottom-bar" class="px-5 py-4 sm:px-7 sm:py-5 bg-white border-t border-slate-100 flex flex-wrap items-center justify-between gap-3">
+                    <button id="btn-hint" onclick="showHint()" class="px-4 py-2.5 rounded-2xl bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 font-bold text-sm transition-colors flex items-center gap-1.5">
+                        <span>💡 Petunjuk</span>
+                    </button>
+
+                    <div class="flex items-center gap-3 ml-auto">
+                        <button id="btn-check" onclick="checkAnswer()" class="btn-game bg-emerald-500 hover:bg-emerald-400 text-white font-display font-bold px-7 py-3 rounded-2xl text-base sm:text-lg flex items-center gap-2">
+                            <span>✔ Cek Jawaban</span>
+                        </button>
+                        <button id="btn-next-level" onclick="goToNextLevel()" class="hidden btn-game bg-sky-600 hover:bg-sky-500 text-white font-display font-bold px-7 py-3 rounded-2xl text-base sm:text-lg flex items-center gap-2">
+                            <span>Level Berikutnya ➡</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- =========================================================
+             VIEW 3: LAYAR KEMENANGAN AKHIR (TAMAT 25 LEVEL)
+             ========================================================= -->
+        <section id="view-victory" class="hidden animate-pop">
+            <div class="bg-white rounded-3xl p-8 sm:p-12 shadow-xl border-2 border-amber-200 text-center max-w-2xl mx-auto">
+                <div class="w-24 h-24 mx-auto mb-5 rounded-full bg-amber-100 flex items-center justify-center text-5xl animate-bounce shadow-inner">
+                    🏆
+                </div>
+                <span class="inline-block bg-emerald-100 text-emerald-800 font-bold text-xs px-3.5 py-1 rounded-full mb-3">
+                    MISI SELESAI 100%
+                </span>
+                <h2 class="text-3xl sm:text-4xl font-bold text-slate-800 mb-3">Selamat, Master Logika!</h2>
+                <p class="text-slate-600 text-base sm:text-lg mb-7 leading-relaxed">
+                    Kamu telah menaklukkan seluruh <strong>25 Level</strong> dari Bab Pengurutan, Pola Kereta Logika, Ketepatan Mengetik, Pemrograman Visual Labirin, hingga Penyusunan Blok Kata. Kemampuan berpikir komputasionalmu luar biasa!
+                </p>
+
+                <div class="grid grid-cols-2 gap-4 max-w-md mx-auto mb-8">
+                    <div class="bg-amber-50 border border-amber-200 p-4 rounded-2xl">
+                        <div class="text-xs font-bold text-amber-700 uppercase">Total Bintang</div>
+                        <div id="victory-stars" class="font-display font-bold text-2xl sm:text-3xl text-amber-600 mt-1">75 / 75 ⭐</div>
+                    </div>
+                    <div class="bg-sky-50 border border-sky-200 p-4 rounded-2xl">
+                        <div class="text-xs font-bold text-sky-700 uppercase">Skor Akhir</div>
+                        <div id="victory-score" class="font-display font-bold text-2xl sm:text-3xl text-sky-600 mt-1">2500</div>
+                    </div>
+                </div>
+
+                <div class="flex flex-wrap items-center justify-center gap-4">
+                    <button onclick="navigateTo('map')" class="btn-game bg-indigo-600 hover:bg-indigo-500 text-white font-display font-bold px-7 py-3.5 rounded-2xl text-base">
+                        🗺 Kembali ke Peta Level
+                    </button>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- MODAL KONFIRMASI RESET PROGRES (Pengganti confirm() bawaan browser) -->
+    <div id="modal-reset" class="fixed inset-0 z-50 hidden bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl animate-pop">
+            <div class="w-14 h-14 rounded-2xl bg-rose-100 text-rose-600 flex items-center justify-center text-2xl mb-4">
+                ⚠️
+            </div>
+            <h3 class="text-xl font-bold text-slate-800 mb-2">Reset Semua Progres?</h3>
+            <p class="text-slate-600 text-sm mb-6 leading-relaxed">
+                Semua bintang, skor, dan level yang sudah terbuka akan kembali ke awal tiap bab (Level 1 Bab 1, Level 6 Bab 2, Level 11 Bab 3, Level 16 Bab 4, dan Level 21 Bab 5). Tindakan ini tidak dapat dibatalkan.
+            </p>
+            <div class="flex items-center justify-end gap-3">
+                <button onclick="closeResetModal()" class="px-4 py-2.5 rounded-xl font-bold text-slate-600 hover:bg-slate-100 text-sm">
+                    Batal
+                </button>
+                <button onclick="confirmResetProgress()" class="btn-game bg-rose-600 hover:bg-rose-500 text-white font-bold px-5 py-2.5 rounded-xl text-sm">
+                    Ya, Reset Sekarang
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        /* =========================================================================
+           1. SISTEM AUDIO SINTETIS (WEB AUDIO API - TANPA URL EKSTERNAL)
+           ========================================================================= */
+        const SoundFX = {
+            ctx: null,
+            enabled: true,
+            init() {
+                if (!this.ctx) {
+                    const AudioContext = window.AudioContext || window.webkitAudioContext;
+                    if (AudioContext) this.ctx = new AudioContext();
+                }
+            },
+            playTone(freq, type, duration, delay = 0, vol = 0.12) {
+                if (!this.enabled) return;
+                try {
+                    this.init();
+                    if (!this.ctx) return;
+                    if (this.ctx.state === 'suspended') this.ctx.resume();
+
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.type = type;
+                    osc.frequency.setValueAtTime(freq, this.ctx.currentTime + delay);
+
+                    gain.gain.setValueAtTime(vol, this.ctx.currentTime + delay);
+                    gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + delay + duration);
+
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+
+                    osc.start(this.ctx.currentTime + delay);
+                    osc.stop(this.ctx.currentTime + delay + duration);
+                } catch (e) {
+                    // Abaikan jika browser memblokir audio sebelum interaksi
+                }
+            },
+            click() { this.playTone(520, 'sine', 0.08, 0, 0.08); },
+            swap() { this.playTone(440, 'triangle', 0.12, 0, 0.1); this.playTone(620, 'triangle', 0.12, 0.06, 0.1); },
+            success() {
+                this.playTone(523.25, 'sine', 0.18, 0, 0.14);     // C5
+                this.playTone(659.25, 'sine', 0.18, 0.1, 0.14);   // E5
+                this.playTone(783.99, 'sine', 0.22, 0.2, 0.14);   // G5
+                this.playTone(1046.50, 'sine', 0.4, 0.32, 0.16);  // C6
+            },
+            error() {
+                this.playTone(240, 'sawtooth', 0.18, 0, 0.1);
+                this.playTone(190, 'sawtooth', 0.25, 0.14, 0.1);
+            }
+        };
+
+        function toggleSound() {
+            SoundFX.enabled = !SoundFX.enabled;
+            document.getElementById('icon-sound-on').classList.toggle('hidden', !SoundFX.enabled);
+            document.getElementById('icon-sound-off').classList.toggle('hidden', SoundFX.enabled);
+            if (SoundFX.enabled) SoundFX.click();
+        }
+
+        /* =========================================================================
+           2. GENERATOR GRAFIK SVG UNTUK BAB 1 (MENARA, POHON, ROKET, BUKU)
+           ========================================================================= */
+        function renderSortingItemSVG(theme, variant, heightPx) {
+            // Mengembalikan SVG yang skalanya proporsional dengan ketinggian item
+            if (theme === 'tower') {
+                // Variasi Menara Kota (terinspirasi soal Bebras Menara)
+                const styles = [
+                    // 0: Menara Jam Klasik (Kuning/Cokelat)
+                    `<svg width="64" height="${heightPx}" viewBox="0 0 64 ${heightPx}" class="overflow-visible">
+                        <polygon points="32,2 22,26 42,26" fill="#0D9488"/>
+                        <line x1="32" y1="0" x2="32" y2="6" stroke="#EF4444" stroke-width="2.5"/>
+                        <rect x="20" y="26" width="24" height="${heightPx - 26}" rx="2" fill="#D97706"/>
+                        <rect x="23" y="29" width="18" height="${heightPx - 32}" fill="#FBBF24"/>
+                        <circle cx="32" cy="40" r="6" fill="#FFFFFF" stroke="#78350F" stroke-width="2"/>
+                        <line x1="32" y1="40" x2="32" y2="36" stroke="#1E293B" stroke-width="1.5"/>
+                        <line x1="32" y1="40" x2="35" y2="40" stroke="#1E293B" stroke-width="1.5"/>
+                        <rect x="26" y="54" width="4" height="${Math.max(8, heightPx - 64)}" fill="#92400E"/>
+                        <rect x="34" y="54" width="4" height="${Math.max(8, heightPx - 64)}" fill="#92400E"/>
+                    </svg>`,
+                    // 1: Menara Observasi Putih-Hitam
+                    `<svg width="64" height="${heightPx}" viewBox="0 0 64 ${heightPx}" class="overflow-visible">
+                        <line x1="32" y1="0" x2="32" y2="16" stroke="#475569" stroke-width="3"/>
+                        <ellipse cx="32" cy="18" rx="16" ry="5" fill="#CBD5E1"/>
+                        <polygon points="16,20 48,20 44,36 20,36" fill="#1E293B"/>
+                        <line x1="24" y1="20" x2="25" y2="36" stroke="#94A3B8" stroke-width="1.5"/>
+                        <line x1="32" y1="20" x2="32" y2="36" stroke="#94A3B8" stroke-width="1.5"/>
+                        <line x1="40" y1="20" x2="39" y2="36" stroke="#94A3B8" stroke-width="1.5"/>
+                        <rect x="26" y="36" width="12" height="${heightPx - 36}" fill="#E2E8F0" stroke="#94A3B8" stroke-width="1"/>
+                    </svg>`,
+                    // 2: Gedung Pencakar Langit Kaca Gelap + Kubah
+                    `<svg width="64" height="${heightPx}" viewBox="0 0 64 ${heightPx}" class="overflow-visible">
+                        <line x1="32" y1="0" x2="32" y2="14" stroke="#334155" stroke-width="2.5"/>
+                        <ellipse cx="32" cy="18" rx="15" ry="6" fill="#64748B"/>
+                        <rect x="14" y="26" width="36" height="${heightPx - 26}" rx="2" fill="#1E293B"/>
+                        <rect x="18" y="32" width="28" height="${heightPx - 36}" fill="#334155"/>
+                        <path d="M18 42 H46 M18 54 H46 M18 66 H46 M18 78 H46 M18 90 H46 M18 102 H46 M27 30 V${heightPx-4} M37 30 V${heightPx-4}" stroke="#38BDF8" stroke-opacity="0.45" stroke-width="1.5"/>
+                    </svg>`,
+                    // 3: Menara Modern Melengkung (Twisted Tower)
+                    `<svg width="64" height="${heightPx}" viewBox="0 0 64 ${heightPx}" class="overflow-visible">
+                        <path d="M20,6 Q44,6 42,40 Q40,75 46,${heightPx} L18,${heightPx} Q22,75 18,40 Q16,6 20,6 Z" fill="#94A3B8" stroke="#475569" stroke-width="1.5"/>
+                        <path d="M20,18 H42 M20,32 H42 M20,46 H42 M20,60 H43 M20,74 H44 M19,88 H45 M19,102 H45 M18,116 H46" stroke="#E2E8F0" stroke-width="1.5"/>
+                    </svg>`,
+                    // 4: Menara Antena Merah-Putih (Calgary Style)
+                    `<svg width="64" height="${heightPx}" viewBox="0 0 64 ${heightPx}" class="overflow-visible">
+                        <polygon points="32,0 29,16 35,16" fill="#DC2626"/>
+                        <ellipse cx="32" cy="18" rx="18" ry="5" fill="#F8FAFC" stroke="#CBD5E1"/>
+                        <rect x="15" y="18" width="34" height="8" rx="2" fill="#DC2626"/>
+                        <polygon points="26,26 38,26 41,${heightPx} 23,${heightPx}" fill="#FDE68A" stroke="#D97706" stroke-width="1"/>
+                    </svg>`,
+                    // 5: Menara Tertinggi Jarum Langit (CN Tower Style)
+                    `<svg width="64" height="${heightPx}" viewBox="0 0 64 ${heightPx}" class="overflow-visible">
+                        <line x1="32" y1="0" x2="32" y2="24" stroke="#EF4444" stroke-width="2.5"/>
+                        <rect x="29.5" y="24" width="5" height="18" fill="#CBD5E1"/>
+                        <ellipse cx="32" cy="44" rx="14" ry="5" fill="#475569"/>
+                        <ellipse cx="32" cy="42" rx="14" ry="4" fill="#F1F5F9"/>
+                        <polygon points="28,48 36,48 39,${heightPx} 25,${heightPx}" fill="#D6D3D1" stroke="#78716C" stroke-width="1"/>
+                    </svg>`,
+                    // 6: Menara Kristal Biru
+                    `<svg width="64" height="${heightPx}" viewBox="0 0 64 ${heightPx}" class="overflow-visible">
+                        <polygon points="32,0 18,22 46,22" fill="#0284C7"/>
+                        <rect x="18" y="22" width="28" height="${heightPx - 22}" fill="#38BDF8" stroke="#0369A1" stroke-width="1.5"/>
+                        <line x1="32" y1="0" x2="32" y2="${heightPx}" stroke="#BAE6FD" stroke-width="2"/>
+                    </svg>`
+                ];
+                return styles[variant % styles.length];
+            }
+
+            if (theme === 'tree') {
+                const colors = [
+                    ['#16A34A', '#22C55E'],
+                    ['#15803D', '#4ADE80'],
+                    ['#0D9488', '#2DD4BF'],
+                    ['#65A30D', '#A3E635'],
+                    ['#059669', '#34D399']
+                ];
+                const [dark, light] = colors[variant % colors.length];
+                const trunkH = Math.max(18, Math.round(heightPx * 0.25));
+                const crownH = heightPx - trunkH;
+                return `<svg width="72" height="${heightPx}" viewBox="0 0 72 ${heightPx}" class="overflow-visible">
+                    <rect x="30" y="${crownH - 4}" width="12" height="${trunkH + 4}" rx="3" fill="#78350F"/>
+                    <ellipse cx="36" cy="${crownH * 0.62}" rx="28" ry="${crownH * 0.42}" fill="${dark}"/>
+                    <ellipse cx="36" cy="${crownH * 0.38}" rx="22" ry="${crownH * 0.36}" fill="${light}"/>
+                    <circle cx="28" cy="${crownH * 0.45}" r="3.5" fill="#F43F5E"/>
+                    <circle cx="44" cy="${crownH * 0.55}" r="3.5" fill="#FBBF24"/>
+                </svg>`;
+            }
+
+            if (theme === 'rocket') {
+                const bodyColors = ['#EF4444', '#3B82F6', '#8B5CF6', '#F59E0B', '#10B981', '#EC4899'];
+                const color = bodyColors[variant % bodyColors.length];
+                const bodyH = Math.max(36, heightPx - 28);
+                return `<svg width="68" height="${heightPx}" viewBox="0 0 68 ${heightPx}" class="overflow-visible">
+                    <!-- Api Roket -->
+                    <polygon points="26,${heightPx - 14} 42,${heightPx - 14} 34,${heightPx}" fill="#F97316"/>
+                    <polygon points="29,${heightPx - 14} 39,${heightPx - 14} 34,${heightPx - 4}" fill="#FDE047"/>
+                    <!-- Sayap Kiri & Kanan -->
+                    <polygon points="22,${heightPx - 32} 10,${heightPx - 14} 22,${heightPx - 16}" fill="#334155"/>
+                    <polygon points="46,${heightPx - 32} 58,${heightPx - 14} 46,${heightPx - 16}" fill="#334155"/>
+                    <!-- Badan Roket -->
+                    <rect x="22" y="18" width="24" height="${bodyH - 4}" rx="8" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="1.5"/>
+                    <!-- Moncong Roket -->
+                    <path d="M22,22 Q34,-4 46,22 Z" fill="${color}"/>
+                    <!-- Jendela -->
+                    <circle cx="34" cy="36" r="6.5" fill="#38BDF8" stroke="#1E293B" stroke-width="2"/>
+                </svg>`;
+            }
+
+            if (theme === 'book') {
+                const bookColors = ['#E11D48', '#2563EB', '#D97706', '#059669', '#7C3AED', '#0891B2'];
+                const color = bookColors[variant % bookColors.length];
+                return `<svg width="64" height="${heightPx}" viewBox="0 0 64 ${heightPx}" class="overflow-visible">
+                    <rect x="14" y="4" width="36" height="${heightPx - 4}" rx="4" fill="${color}"/>
+                    <rect x="18" y="4" width="6" height="${heightPx - 4}" fill="rgba(255,255,255,0.25)"/>
+                    <rect x="22" y="14" width="20" height="8" rx="2" fill="#FEF3C7"/>
+                    <rect x="22" y="${heightPx - 18}" width="20" height="4" rx="1" fill="rgba(255,255,255,0.4)"/>
+                </svg>`;
+            }
+        }
+
+        /* =========================================================================
+           3. GENERATOR GRAFIK SVG UNTUK BAB 2 (KERETA & TRAILER BALOK TITIK)
+           ========================================================================= */
+        // Menggambar satu tumpukan balok abu-abu dengan titik hitam (misal [4, 1, 2, 3] dari atas ke bawah)
+        function renderBlockStackSVG(layers, width = 96, height = 84) {
+            const count = layers.length;
+            const slabH = Math.floor((height - 6) / count);
+            let slabsSVG = '';
+
+            layers.forEach((dotCount, idx) => {
+                const y = 3 + idx * slabH;
+                const h = slabH - 2;
+                // Balok abu-abu dengan sudut membulat
+                slabsSVG += `<rect x="4" y="${y}" width="${width - 8}" height="${h}" rx="4" fill="#CBD5E1" stroke="#334155" stroke-width="2"/>`;
+
+                // Titik-titik hitam di tengah balok
+                if (dotCount > 0) {
+                    const maxSpan = width - 22;
+                    const step = dotCount === 1 ? 0 : Math.min(14, maxSpan / (dotCount - 1));
+                    const totalDotsW = (dotCount - 1) * step;
+                    const startX = width / 2 - totalDotsW / 2;
+                    const r = Math.min(4.6, (h - 4) / 2);
+
+                    for (let d = 0; d < dotCount; d++) {
+                        const cx = startX + d * step;
+                        const cy = y + h / 2;
+                        slabsSVG += `<circle cx="${cx}" cy="${cy}" r="${r}" fill="#0F172A"/>`;
+                    }
+                }
+            });
+
+            return `<svg width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" class="mx-auto block">${slabsSVG}</svg>`;
+        }
+
+        // Menggambar rangkaian lengkap Lokomotif + 4 Trailer
+        function renderTrainSceneSVG(trailersData, selectedOptionLayers = null) {
+            // trailersData berisi array untuk Trailer 1, 2, 3 (masing-masing array lapisan titik)
+            return `
+            <div class="train-scroll overflow-x-auto pb-3 pt-2">
+                <div class="min-w-[660px] flex items-end justify-center gap-1 px-2">
+                    <!-- LOKOMOTIF MERAH -->
+                    <div class="flex flex-col items-center shrink-0">
+                        <svg width="110" height="118" viewBox="0 0 110 118">
+                            <!-- Cerobong Asap -->
+                            <rect x="24" y="16" width="14" height="22" rx="2" fill="#334155"/>
+                            <path d="M20,16 L42,16 L38,22 L24,22 Z" fill="#1E293B"/>
+                            <!-- Badan Lokomotif -->
+                            <path d="M14,62 Q14,38 36,38 L56,38 L56,22 L98,22 L98,92 L14,92 Z" fill="#EF4444" stroke="#991B1B" stroke-width="2.5"/>
+                            <!-- Jendela Kabin -->
+                            <rect x="62" y="30" width="28" height="24" rx="4" fill="#1E293B"/>
+                            <rect x="65" y="33" width="10" height="18" rx="2" fill="#38BDF8" fill-opacity="0.4"/>
+                            <!-- Lampu Depan -->
+                            <ellipse cx="16" cy="70" rx="5" ry="7" fill="#FEF08A" stroke="#CA8A04" stroke-width="1.5"/>
+                            <!-- Garis Hias -->
+                            <line x1="24" y1="68" x2="92" y2="68" stroke="#FCA5A5" stroke-width="2.5"/>
+                            <line x1="24" y1="75" x2="92" y2="75" stroke="#FCA5A5" stroke-width="2.5"/>
+                            <!-- 3 Roda Lokomotif -->
+                            <circle cx="30" cy="98" r="12" fill="#E2E8F0" stroke="#1E293B" stroke-width="3"/>
+                            <circle cx="30" cy="98" r="5" fill="#64748B"/>
+                            <circle cx="58" cy="98" r="12" fill="#E2E8F0" stroke="#1E293B" stroke-width="3"/>
+                            <circle cx="58" cy="98" r="5" fill="#64748B"/>
+                            <circle cx="86" cy="98" r="12" fill="#E2E8F0" stroke="#1E293B" stroke-width="3"/>
+                            <circle cx="86" cy="98" r="5" fill="#64748B"/>
+                        </svg>
+                        <span class="text-xs font-bold text-slate-500 mt-1">Lokomotif</span>
+                    </div>
+
+                    <!-- TRAILER 1, 2, 3, DAN 4 -->
+                    ${[0, 1, 2, 3].map(idx => {
+                        const isTarget = idx === 3;
+                        const layers = isTarget ? selectedOptionLayers : trailersData[idx];
+                        return `
+                        <div class="flex items-end shrink-0">
+                            <!-- Sambungan Gerbong -->
+                            <div class="mb-7 -mx-1 z-10">
+                                <svg width="18" height="16" viewBox="0 0 18 16">
+                                    <rect x="0" y="6" width="18" height="4" fill="#334155"/>
+                                    <circle cx="9" cy="8" r="4.5" fill="#1E293B"/>
+                                </svg>
+                            </div>
+                            <!-- Gerbong Trailer -->
+                            <div class="flex flex-col items-center">
+                                <!-- Area Muatan Balok -->
+                                <div class="w-[112px] h-[94px] flex items-end justify-center mb-0.5">
+                                    ${layers
+                                        ? `<div class="animate-pop">${renderBlockStackSVG(layers, 102, 88)}</div>`
+                                        : `<div class="w-[100px] h-[84px] rounded-xl border-2 border-dashed border-indigo-400 bg-indigo-50/80 flex flex-col items-center justify-center text-indigo-600 animate-pulse">
+                                             <span class="font-display font-bold text-3xl">?</span>
+                                             <span class="text-[10px] font-bold uppercase tracking-wider">Pilih di Bawah</span>
+                                           </div>`
+                                    }
+                                </div>
+                                <!-- Rangka Merah & Roda Trailer -->
+                                <svg width="116" height="34" viewBox="0 0 116 34">
+                                    <rect x="2" y="2" width="112" height="10" rx="4" fill="#DC2626" stroke="#991B1B" stroke-width="2"/>
+                                    <circle cx="24" cy="21" r="9" fill="#E2E8F0" stroke="#1E293B" stroke-width="2.5"/>
+                                    <circle cx="24" cy="21" r="3.5" fill="#64748B"/>
+                                    <circle cx="44" cy="21" r="9" fill="#E2E8F0" stroke="#1E293B" stroke-width="2.5"/>
+                                    <circle cx="44" cy="21" r="3.5" fill="#64748B"/>
+                                    <circle cx="72" cy="21" r="9" fill="#E2E8F0" stroke="#1E293B" stroke-width="2.5"/>
+                                    <circle cx="72" cy="21" r="3.5" fill="#64748B"/>
+                                    <circle cx="92" cy="21" r="9" fill="#E2E8F0" stroke="#1E293B" stroke-width="2.5"/>
+                                    <circle cx="92" cy="21" r="3.5" fill="#64748B"/>
+                                </svg>
+                                <span class="text-xs font-bold ${isTarget ? 'text-indigo-700 bg-indigo-100 px-2.5 py-0.5 rounded-full' : 'text-slate-600'} mt-1">
+                                    Trailer ${idx + 1}
+                                </span>
+                            </div>
+                        </div>`;
+                    }).join('')}
+                </div>
+                <!-- Rel Kereta -->
+                <div class="min-w-[660px] h-1.5 bg-slate-700 rounded-full mx-auto"></div>
+            </div>`;
+        }
+
+        /* =========================================================================
+           4. DATA 10 LEVEL PERMAINAN (2 BAB X 5 LEVEL)
+           ========================================================================= */
+        const LEVELS = [
+            // ---------------- BAB 1: PENGURUTAN & KLASIFIKASI ----------------
+            {
+                id: 1,
+                chapter: 1,
+                type: 'sort',
+                theme: 'tower',
+                title: 'Menara Kota',
+                shortDesc: 'Urutkan 5 menara ikonik dari rendah ke tinggi.',
+                instruction: 'Seret dan lepas (atau ketuk dua kartu untuk menukar) agar ke-5 menara tersusun dari yang PALING RENDAH di kiri hingga PALING TINGGI di kanan!',
+                hint: 'Bandingkan puncak antena setiap menara. Mulai dari menara yang paling pendek di sebelah paling kiri.',
+                explanation: 'Tepat sekali! Mengurutkan data berdasarkan ukuran (Sorting) membantu komputer mencari informasi lebih cepat.',
+                items: [
+                    { id: 't1', label: 'Menara Jam', height: 68, variant: 0 },
+                    { id: 't2', label: 'Menara Pantau', height: 88, variant: 1 },
+                    { id: 't3', label: 'Gedung Kubah', height: 108, variant: 2 },
+                    { id: 't4', label: 'Menara Lengkung', height: 128, variant: 3 },
+                    { id: 't5', label: 'Menara Langit', height: 148, variant: 5 }
+                ]
+            },
+            {
+                id: 2,
+                chapter: 1,
+                type: 'sort',
+                theme: 'tree',
+                title: 'Pohon Hutan',
+                shortDesc: 'Urutkan 5 pohon rimbun dari pendek ke tinggi.',
+                instruction: 'Susun kelima pohon hutan ini dari yang PALING PENDEK di sebelah kiri ke yang PALING TINGGI di sebelah kanan!',
+                hint: 'Perhatikan tinggi pucuk daun masing-masing pohon, bukan hanya panjang batangnya.',
+                explanation: 'Bagus! Semua pohon telah tersusun rapi secara menaik (Ascending Order).',
+                items: [
+                    { id: 'p1', label: 'Tunas Muda', height: 64, variant: 0 },
+                    { id: 'p2', label: 'Pohon Cemara', height: 84, variant: 1 },
+                    { id: 'p3', label: 'Pohon Akasia', height: 104, variant: 2 },
+                    { id: 'p4', label: 'Pohon Beringin', height: 124, variant: 3 },
+                    { id: 'p5', label: 'Pohon Raksasa', height: 144, variant: 4 }
+                ]
+            },
+            {
+                id: 3,
+                chapter: 1,
+                type: 'sort',
+                theme: 'rocket',
+                title: 'Roket Antariksa',
+                shortDesc: 'Urutkan 6 roket dari ukuran terkecil ke terbesar.',
+                instruction: 'Sebelum meluncur ke luar angkasa, urutkan 6 roket ini dari ukuran TERKECIL di kiri ke TERBESAR di kanan!',
+                hint: 'Ada 6 roket sekarang. Cek bagian tengah agar tidak ada dua roket yang tertukar.',
+                explanation: 'Meluncur! Kamu berhasil membandingkan 6 objek sekaligus dengan teliti.',
+                items: [
+                    { id: 'r1', label: 'Roket Mini', height: 62, variant: 0 },
+                    { id: 'r2', label: 'Roket Orbit', height: 78, variant: 1 },
+                    { id: 'r3', label: 'Roket Bulan', height: 94, variant: 2 },
+                    { id: 'r4', label: 'Roket Mars', height: 110, variant: 3 },
+                    { id: 'r5', label: 'Roket Saturnus', height: 126, variant: 4 },
+                    { id: 'r6', label: 'Roket Galaksi', height: 144, variant: 5 }
+                ]
+            },
+            {
+                id: 4,
+                chapter: 1,
+                type: 'sort',
+                theme: 'book',
+                title: 'Buku Perpustakaan',
+                shortDesc: 'Urutkan 6 buku dari paling pendek ke tinggi.',
+                instruction: 'Bantu pustakawan merapikan rak! Urutkan ke-6 buku ini dari yang PALING PENDEK di kiri ke PALING TINGGI di kanan.',
+                hint: 'Perbedaan tinggi antar buku cukup rapat. Perhatikan garis tepi atas setiap buku dengan saksama.',
+                explanation: 'Rak buku terlihat sangat rapi! Pengurutan memudahkan pencarian buku di perpustakaan.',
+                items: [
+                    { id: 'b1', label: 'Buku Saku', height: 64, variant: 0 },
+                    { id: 'b2', label: 'Buku Cerita', height: 79, variant: 1 },
+                    { id: 'b3', label: 'Buku Sains', height: 94, variant: 2 },
+                    { id: 'b4', label: 'Kamus Mini', height: 109, variant: 3 },
+                    { id: 'b5', label: 'Ensiklopedia', height: 124, variant: 4 },
+                    { id: 'b6', label: 'Atlas Dunia', height: 140, variant: 5 }
+                ]
+            },
+            {
+                id: 5,
+                chapter: 1,
+                type: 'sort_bonus',
+                theme: 'tower',
+                title: 'Tantangan Menara Tertinggi',
+                shortDesc: 'Urutkan 7 menara & jawab pertanyaan posisi ke-4!',
+                instruction: 'Tantangan Akhir Bab 1! Urutkan ke-7 menara dari PALING RENDAH ke PALING TINGGI, lalu pilih nama menara yang berada pada URUTAN KE-4 dari kiri!',
+                hint: 'Urutkan dulu ke-7 menara dari rendah ke tinggi, lalu hitung dari kiri: ke-1, ke-2, ke-3, dan lihat siapa yang berada di posisi ke-4.',
+                explanation: 'Luar biasa! Setelah diurutkan dari terendah, menara urutan ke-4 (posisi tengah dari 7 menara) adalah Gedung Kubah.',
+                bonusQuestion: 'Jika semua menara sudah diurutkan dari paling rendah ke paling tinggi, menara mana yang berada pada urutan KE-4 dalam daftar?',
+                bonusAnswerId: 'm4',
+                items: [
+                    { id: 'm1', label: 'Menara Jam', height: 58, variant: 0 },
+                    { id: 'm2', label: 'Menara Pantau', height: 72, variant: 1 },
+                    { id: 'm3', label: 'Menara Kristal', height: 86, variant: 6 },
+                    { id: 'm4', label: 'Gedung Kubah', height: 100, variant: 2 },
+                    { id: 'm5', label: 'Menara Lengkung', height: 115, variant: 3 },
+                    { id: 'm6', label: 'Menara Merah', height: 130, variant: 4 },
+                    { id: 'm7', label: 'Menara Langit', height: 146, variant: 5 }
+                ]
+            },
+
+            // ---------------- BAB 2: POLA & LOGIKA SUSUNAN ----------------
+            {
+                id: 6,
+                chapter: 2,
+                type: 'train',
+                title: 'Pola Piramida Titik',
+                shortDesc: 'Lengkapi susunan titik piramida pada Trailer 4.',
+                instruction: 'Perhatikan pola pertambahan tingkat balok dari Trailer 1, Trailer 2, dan Trailer 3. Pilih susunan balok yang tepat untuk Trailer 4!',
+                hint: 'Trailer 1 punya 1 balok [1], Trailer 2 punya 2 balok [1, 2], Trailer 3 punya 3 balok [1, 2, 3]. Maka Trailer 4 pasti punya 4 balok!',
+                explanation: 'Benar! Setiap trailer bertambah 1 lapisan balok di bagian bawah dengan jumlah titik mengikuti urutan 1, 2, 3, 4 dari atas ke bawah.',
+                trailers: [
+                    [1],
+                    [1, 2],
+                    [1, 2, 3]
+                ],
+                options: [
+                    { id: 'A', layers: [3, 4, 1, 2] },
+                    { id: 'B', layers: [1, 2, 3, 4] },
+                    { id: 'C', layers: [4, 3, 2, 1] },
+                    { id: 'D', layers: [2, 3, 4, 1] }
+                ],
+                correctOption: 'B'
+            },
+            {
+                id: 7,
+                chapter: 2,
+                type: 'train',
+                title: 'Pola Piramida Terbalik',
+                shortDesc: 'Temukan aturan susunan titik yang berkurang ke bawah.',
+                instruction: 'Amati bagaimana jumlah titik pada setiap balok berkurang dari Trailer 1 hingga Trailer 3. Manakah muatan Trailer 4?',
+                hint: 'Trailer 1 dimulai dari [4], Trailer 2 menjadi [4, 3], Trailer 3 menjadi [4, 3, 2]. Angka berapa yang ditambahkan di paling bawah?',
+                explanation: 'Tepat! Pola piramida terbalik mengurangi 1 titik di setiap lapisan ke bawah: 4, 3, 2, dan 1.',
+                trailers: [
+                    [4],
+                    [4, 3],
+                    [4, 3, 2]
+                ],
+                options: [
+                    { id: 'A', layers: [1, 2, 3, 4] },
+                    { id: 'B', layers: [4, 3, 1, 2] },
+                    { id: 'C', layers: [4, 3, 2, 1] },
+                    { id: 'D', layers: [4, 2, 3, 1] }
+                ],
+                correctOption: 'C'
+            },
+            {
+                id: 8,
+                chapter: 2,
+                type: 'train',
+                title: 'Pola Pergeseran Baris',
+                shortDesc: 'Lacak pergeseran posisi balok di setiap gerbong.',
+                instruction: 'Lihat susunan 4 balok di Trailer 1, 2, dan 3! Setiap berpindah ke trailer berikutnya, semua balok bergeser turun satu tingkat (balok terbawah pindah ke paling atas). Pilih Trailer 4!',
+                hint: 'Di Trailer 3 susunannya dari atas ke bawah adalah [2, 3, 4, 1]. Pindahkan balok paling bawah (1 titik) ke posisi paling atas!',
+                explanation: 'Cerdas! Konsep pergeseran melingkar (Cyclic Shift) dari [2, 3, 4, 1] menghasilkan [1, 2, 3, 4].',
+                trailers: [
+                    [4, 1, 2, 3],
+                    [3, 4, 1, 2],
+                    [2, 3, 4, 1]
+                ],
+                options: [
+                    { id: 'A', layers: [3, 4, 1, 2] },
+                    { id: 'B', layers: [1, 2, 3, 4] },
+                    { id: 'C', layers: [4, 3, 2, 1] },
+                    { id: 'D', layers: [2, 3, 4, 1] }
+                ],
+                correctOption: 'B'
+            },
+            {
+                id: 9,
+                chapter: 2,
+                type: 'train',
+                title: 'Pola Penambahan Ganjil',
+                shortDesc: 'Pecahkan pola bilangan ganjil (1, 3, 5, 7) pada balok.',
+                instruction: 'Hitung jumlah titik hitam pada setiap lapisan balok di Trailer 1, 2, dan 3. Mengikuti pola bilangan ganjil, manakah susunan Trailer 4?',
+                hint: 'Bilangan ganjil berurutan adalah 1, 3, 5, dan berikutnya adalah 7 titik!',
+                explanation: 'Hebat! Jumlah titik bertambah +2 pada setiap lapisan baru: 1, 3, 5, hingga 7 titik di lapisan terbawah.',
+                trailers: [
+                    [1],
+                    [1, 3],
+                    [1, 3, 5]
+                ],
+                options: [
+                    { id: 'A', layers: [1, 3, 5, 6] },
+                    { id: 'B', layers: [1, 2, 4, 7] },
+                    { id: 'C', layers: [7, 5, 3, 1] },
+                    { id: 'D', layers: [1, 3, 5, 7] }
+                ],
+                correctOption: 'D'
+            },
+            {
+                id: 10,
+                chapter: 2,
+                type: 'train',
+                title: 'Tantangan Kereta Logika Akhir',
+                shortDesc: 'Kombinasi pola jumlah titik & pergeseran lapisan.',
+                instruction: 'Tantangan Terakhir! Perhatikan dua aturan sekaligus: posisi balok bergeser naik satu tingkat, DAN setiap balok bertambah 1 titik di setiap trailer baru. Pilih Trailer 4!',
+                hint: 'Di Trailer 3 susunannya [3, 4, 5]. Geser ke atas menjadi [4, 5, 3], lalu tambahkan +1 titik pada setiap balok!',
+                explanation: 'Sempurna! Menggeser [3, 4, 5] ke atas menjadi [4, 5, 3], lalu menambah +1 titik di setiap balok menghasilkan [5, 6, 4]. Kamu menyelesaikan semua level!',
+                trailers: [
+                    [1, 2, 3],
+                    [3, 4, 2],
+                    [5, 3, 4]
+                ],
+                options: [
+                    { id: 'A', layers: [5, 6, 4] },
+                    { id: 'B', layers: [4, 5, 6] },
+                    { id: 'C', layers: [6, 4, 5] },
+                    { id: 'D', layers: [4, 6, 5] }
+                ],
+                correctOption: 'D'
+            },
+
+            // ---------------- BAB 3: KECEPATAN & KETEPATAN MENGETIK ----------------
+            {
+                id: 11,
+                chapter: 3,
+                type: 'typing',
+                title: 'Kata Dasar 3 Huruf',
+                shortDesc: 'Ketik 8 kata bahasa Indonesia (3 huruf) sebelum mengenai karakter.',
+                instruction: 'Ketik kata bahasa Indonesia 3 huruf yang jatuh dengan tepat lalu tekan Enter (atau tombol Kirim). Jika salah ketik atau kata mengenai karakter kuning, nyawa berkurang 1 dari 3!',
+                hint: 'Mulai ketik kata 3 huruf yang posisinya paling rendah terlebih dahulu. Huruf yang cocok akan otomatis disorot hijau.',
+                explanation: 'Hebat! Ketepatan mengetik kata singkat bahasa Indonesia melatih fokus jari pada papan ketik.',
+                targetWords: 8,
+                spawnIntervalMs: 2400,
+                fallSpeed: 38,
+                maxActive: 3,
+                words: ['air', 'api', 'ibu', 'jam', 'tas', 'rak', 'pos', 'peta', 'dua', 'iga', 'kue', 'obi'].filter(w => w.length === 3).concat(['ban', 'cat', 'gol', 'hutan'.slice(0,3), 'ikan'.slice(0,3), 'kaki'.slice(0,3)])
+            },
+            {
+                id: 12,
+                chapter: 3,
+                type: 'typing',
+                title: 'Kata Logika 4 Huruf',
+                shortDesc: 'Ketik 10 kata bahasa Indonesia (4 huruf) dengan teliti.',
+                instruction: 'Ketik setiap kata bahasa Indonesia 4 huruf yang jatuh dan tekan Enter. Hati-hati jangan sampai salah ejaan agar 3 nyawamu tetap aman!',
+                hint: 'Perhatikan setiap huruf sebelum menekan Enter. Salah satu huruf saja akan mengurangi 1 nyawa.',
+                explanation: 'Bagus sekali! Kamu mampu mengenali dan mengetik kata 4 huruf bahasa Indonesia dengan akurat.',
+                targetWords: 10,
+                spawnIntervalMs: 2200,
+                fallSpeed: 46,
+                maxActive: 3,
+                words: ['buku', 'data', 'pola', 'kode', 'meja', 'bola', 'kota', 'hari', 'jari', 'pintu'.slice(0,4), 'roda', 'sains'.slice(0,4), 'akar', 'batu', 'daun']
+            },
+            {
+                id: 13,
+                chapter: 3,
+                type: 'typing',
+                title: 'Kata Cerdas 5 Huruf',
+                shortDesc: 'Ketik 12 kata bahasa Indonesia (5 huruf) yang jatuh.',
+                instruction: 'Kecepatan meningkat! Ketik 12 kata bahasa Indonesia 5 huruf sebelum menyentuh karakter kuning di bawah.',
+                hint: 'Fokus pada satu kata yang paling dekat dengan karakter kuning, ketik lengkap, lalu tekan Enter.',
+                explanation: 'Luar biasa! Refleks dan ketelitianmu dalam mengetik kata 5 huruf bahasa Indonesia semakin tajam.',
+                targetWords: 12,
+                spawnIntervalMs: 2050,
+                fallSpeed: 54,
+                maxActive: 4,
+                words: ['angka', 'huruf', 'kunci', 'layar', 'papan', 'rumah', 'surat', 'taman', 'waktu', 'warna', 'cahaya'.slice(0,5), 'gerak', 'jalur', 'kelas', 'pohon']
+            },
+            {
+                id: 14,
+                chapter: 3,
+                type: 'typing',
+                title: 'Campuran 3, 4, & 5 Huruf',
+                shortDesc: 'Ketik 14 kata bahasa Indonesia campuran 3, 4, dan 5 huruf.',
+                instruction: 'Panjang kata kini bervariasi! Jaga konsentrasi dan ketik 14 kata bahasa Indonesia campuran 3, 4, dan 5 huruf dengan benar.',
+                hint: 'Perhatikan panjang setiap kata (3, 4, atau 5 huruf). Jangan terburu-buru menekan Enter jika belum lengkap.',
+                explanation: 'Mengagumkan! Kamu berhasil menjaga akurasi tinggi pada variasi panjang kata bahasa Indonesia.',
+                targetWords: 14,
+                spawnIntervalMs: 1950,
+                fallSpeed: 60,
+                maxActive: 4,
+                words: ['air', 'api', 'tas', 'jam', 'buku', 'data', 'pola', 'kode', 'roda', 'daun', 'angka', 'kunci', 'layar', 'jalur', 'pohon']
+            },
+            {
+                id: 15,
+                chapter: 3,
+                type: 'typing',
+                title: 'Tantangan Kata & Tanda Baca',
+                shortDesc: 'Ujian akhir: 15 kata 3-4 huruf disertai tanda baca (! ? . ,).',
+                instruction: 'Tantangan Terakhir Bab 3! Ketik 15 kata bahasa Indonesia (3–4 huruf) lengkap dengan tanda baca di akhirnya sebelum mengenai karakter kuning!',
+                hint: 'Perhatikan tanda baca di akhir kata seperti seru (!), tanya (?), titik (.), atau koma (,). Gunakan tombol Shift bila perlu.',
+                explanation: 'Sempurna! Kamu menguasai ketepatan huruf sekaligus tanda baca dalam bahasa Indonesia!',
+                targetWords: 15,
+                spawnIntervalMs: 1950,
+                fallSpeed: 62,
+                maxActive: 4,
+                words: ['ayo!', 'apa?', 'ini.', 'itu,', 'ada!', 'mau?', 'bisa!', 'coba.', 'mari,', 'siap?', 'data.', 'kode!', 'pola,', 'cari?', 'gas!']
+            },
+
+            // ---------------- BAB 4: PEMROGRAMAN VISUAL LABIRIN (BLOCKLY MAZE) ----------------
+            {
+                id: 16,
+                chapter: 4,
+                type: 'maze',
+                title: 'Langkah Lurus Pertama',
+                shortDesc: 'Susun blok maju untuk memandu karakter ke titik tujuan.',
+                instruction: 'Klik atau seret blok "maju" ke Area Program di sebelah kanan, lalu tekan "Jalankan Program" untuk mencapai pin tujuan merah!',
+                hint: 'Karakter menghadap ke kanan. Hitung berapa petak jalur kuning di depan karakter menuju pin tujuan (2 langkah).',
+                explanation: 'Tepat sekali! Dalam pemrograman, perintah dijalankan secara berurutan dari atas ke bawah (Sequence).',
+                gridCols: 6,
+                gridRows: 6,
+                // 0 = tembok/latar dekorasi, 1 = jalur kuning
+                grid: [
+                    [0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0],
+                    [0, 0, 1, 1, 1, 0],
+                    [0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0]
+                ],
+                // dir: 0=Atas(Utara), 1=Kanan(Timur), 2=Bawah(Selatan), 3=Kiri(Barat)
+                start: { x: 2, y: 2, dir: 1 },
+                goal: { x: 4, y: 2 },
+                maxBlocks: 4,
+                idealBlocks: 2,
+                availableBlocks: ['forward', 'turn_left', 'turn_right']
+            },
+            {
+                id: 17,
+                chapter: 4,
+                type: 'maze',
+                title: 'Belokan Tangga Zig-Zag',
+                shortDesc: 'Kombinasikan maju, belok kiri, dan belok kanan di labirin.',
+                instruction: 'Susun urutan blok "maju", "belok kiri ↺", dan "belok kanan ↻" untuk mengikuti jalur berbelok menuju pin tujuan!',
+                hint: 'Pertama maju 1 langkah, lalu belok kiri menghadap ke atas, maju 1 langkah, belok kanan menghadap ke kanan, dan maju 1 langkah!',
+                explanation: 'Luar biasa! Kamu berhasil mengatur arah hadap karakter menggunakan perintah belok kiri dan belok kanan.',
+                gridCols: 6,
+                gridRows: 6,
+                grid: [
+                    [0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 1, 1, 0],
+                    [0, 0, 1, 1, 0, 0],
+                    [0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0]
+                ],
+                start: { x: 2, y: 3, dir: 1 },
+                goal: { x: 4, y: 2 },
+                maxBlocks: 7,
+                idealBlocks: 5,
+                availableBlocks: ['forward', 'turn_left', 'turn_right']
+            },
+            {
+                id: 18,
+                chapter: 4,
+                type: 'maze',
+                title: 'Jalur Huruf U Labirin',
+                shortDesc: 'Navigasi jalur memutar menuju pin tujuan di atas.',
+                instruction: 'Jalur menuju tujuan memutar ke kanan lalu naik ke atas. Susun blok perintah yang tepat tanpa menabrak tepi jalur!',
+                hint: 'Dari posisi awal menghadap kanan: maju 2 langkah, belok kiri ↺ (menghadap atas), maju 2 langkah, lalu belok kiri ↺ dan maju 1 langkah.',
+                explanation: 'Bagus sekali! Kamu melacak perubahan arah hadap karakter di setiap sudut labirin dengan akurat.',
+                gridCols: 6,
+                gridRows: 6,
+                grid: [
+                    [0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 1, 1, 0],
+                    [0, 0, 0, 0, 1, 0],
+                    [0, 0, 1, 1, 1, 0],
+                    [0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0]
+                ],
+                start: { x: 2, y: 3, dir: 1 },
+                goal: { x: 3, y: 1 },
+                maxBlocks: 9,
+                idealBlocks: 7,
+                availableBlocks: ['forward', 'turn_left', 'turn_right']
+            },
+            {
+                id: 19,
+                chapter: 4,
+                type: 'maze',
+                title: 'Blok Perulangan (Repeat)',
+                shortDesc: 'Gunakan blok "ulangi" untuk menempuh lorong panjang.',
+                instruction: 'Lorong ini cukup panjang! Kamu bisa memakai blok "ulangi ... kali" untuk mengulang perintah maju secara ringkas (maksimal 4 blok).',
+                hint: 'Pasang blok "ulangi 4 kali", lalu klik tombol "+ maju" di dalam blok ulangi tersebut (atau isi dengan perintah maju).',
+                explanation: 'Cerdas! Blok perulangan (Loop) membuat kode program jauh lebih singkat, rapi, dan efisien.',
+                gridCols: 6,
+                gridRows: 6,
+                grid: [
+                    [0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0],
+                    [0, 1, 1, 1, 1, 1],
+                    [0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0]
+                ],
+                start: { x: 1, y: 2, dir: 1 },
+                goal: { x: 5, y: 2 },
+                maxBlocks: 4,
+                idealBlocks: 2,
+                availableBlocks: ['forward', 'turn_left', 'turn_right', 'repeat']
+            },
+            {
+                id: 20,
+                chapter: 4,
+                type: 'maze',
+                title: 'Tantangan Labirin Master',
+                shortDesc: 'Gabungkan blok ulangi & belokan untuk menaklukkan labirin akhir!',
+                instruction: 'Tantangan Terakhir Bab 4! Susun program efisien (maksimal 6 blok) menggunakan perulangan dan belokan untuk mencapai pin tujuan!',
+                hint: 'Gunakan blok ulangi 3 kali untuk maju ke ujung kanan, belok kiri ↺, lalu gunakan blok ulangi 3 kali lagi untuk maju ke atas menuju tujuan!',
+                explanation: 'Sempurna! Kamu menguasai konsep Sequence (urutan), Orientation (arah), dan Loop (perulangan) dalam pemrograman visual!',
+                gridCols: 6,
+                gridRows: 6,
+                grid: [
+                    [0, 0, 0, 0, 1, 0],
+                    [0, 0, 0, 0, 1, 0],
+                    [0, 0, 0, 0, 1, 0],
+                    [0, 1, 1, 1, 1, 0],
+                    [0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0]
+                ],
+                start: { x: 1, y: 3, dir: 1 },
+                goal: { x: 4, y: 0 },
+                maxBlocks: 6,
+                idealBlocks: 5,
+                availableBlocks: ['forward', 'turn_left', 'turn_right', 'repeat']
+            },
+
+            // ---------------- BAB 5: MENYUSUN BLOK KATA (SINTAKSIS KALIMAT) ----------------
+            {
+                id: 21,
+                chapter: 5,
+                type: 'sentence',
+                title: 'Masakan Ibu Santi',
+                shortDesc: 'Susun 5 blok kata menjadi kalimat berita yang benar.',
+                instruction: 'Seret dan lepas blok kata hitam (atau ketuk dua blok kata untuk menukar posisinya) di atas garis hingga tersusun menjadi kalimat yang tepat!',
+                hint: 'Mulai dengan nama orang berhuruf kapital ("Santi"), diikuti kata keterangan ("sangat"), kata kerja ("suka"), dan objek ("masakan ibu").',
+                explanation: 'Tepat sekali! Kalimat yang benar adalah: "Santi sangat suka masakan ibu." (Pola Subjek - Predikat - Objek).',
+                words: ['Santi', 'sangat', 'suka', 'masakan', 'ibu'],
+                punctuation: '.'
+            },
+            {
+                id: 22,
+                chapter: 5,
+                type: 'sentence',
+                title: 'Pergi ke Sekolah',
+                shortDesc: 'Susun 5 blok kata tentang kegiatan pagi hari.',
+                instruction: 'Susunlah blok-blok kata di bawah ini menjadi kalimat bahasa Indonesia yang runtut dan bermakna!',
+                hint: 'Cari kata berhuruf kapital di awal kalimat ("Budi"), lalu susun aktivitasnya menuju sekolah setiap pagi.',
+                explanation: 'Bagus sekali! Susunan kalimat yang padu adalah: "Budi berangkat ke sekolah pagi."',
+                words: ['Budi', 'berangkat', 'ke', 'sekolah', 'pagi'],
+                punctuation: '.'
+            },
+            {
+                id: 23,
+                chapter: 5,
+                type: 'sentence',
+                title: 'Membaca di Perpustakaan',
+                shortDesc: 'Susun 6 blok kata menjadi kalimat aktivitas belajar.',
+                instruction: 'Urutkan ke-6 blok kata ini pada baris kalimat agar membentuk struktur Subjek - Predikat - Objek - Keterangan Tempat!',
+                hint: 'Awali dengan "Rina", lalu kata kerja "membaca", benda yang dibaca "buku cerita", dan tempatnya "di perpustakaan".',
+                explanation: 'Luar biasa! Susunan kalimatnya adalah: "Rina membaca buku cerita di perpustakaan."',
+                words: ['Rina', 'membaca', 'buku', 'cerita', 'di', 'perpustakaan'],
+                punctuation: '.'
+            },
+            {
+                id: 24,
+                chapter: 5,
+                type: 'sentence',
+                title: 'Kalimat Tanya Logika',
+                shortDesc: 'Susun 6 blok kata menjadi kalimat tanya yang tepat.',
+                instruction: 'Perhatikan tanda tanya (?) di akhir baris! Susun blok-blok kata ini menjadi kalimat tanya yang sopan dan jelas.',
+                hint: 'Kalimat tanya diawali dengan kata tanya berhuruf kapital ("Kapan"), diikuti subjek ("kita") dan kegiatannya.',
+                explanation: 'Cerdas! Kalimat tanya yang benar adalah: "Kapan kita mulai belajar pemrograman visual?"',
+                words: ['Kapan', 'kita', 'mulai', 'belajar', 'pemrograman', 'visual'],
+                punctuation: '?'
+            },
+            {
+                id: 25,
+                chapter: 5,
+                type: 'sentence',
+                title: 'Tantangan Kalimat Majemuk',
+                shortDesc: 'Susun 7 blok kata menjadi kalimat motivasi belajar.',
+                instruction: 'Tantangan Terakhir Bab 5! Susun seluruh 7 blok kata ini menjadi kalimat lengkap yang padu sebelum menekan Cek Jawaban!',
+                hint: 'Mulai dengan "Anak", diikuti "yang rajin belajar", lalu hasilnya "pasti meraih prestasi".',
+                explanation: 'Sempurna! Susunan kalimat lengkapnya adalah: "Anak yang rajin belajar pasti meraih prestasi." Selamat telah menuntaskan Bab 5!',
+                words: ['Anak', 'yang', 'rajin', 'belajar', 'pasti', 'meraih', 'prestasi'],
+                punctuation: '.'
+            }
+        ];
+
+        /* =========================================================================
+           5. MANAJEMEN STATE & PENYIMPANAN LOCALSTORAGE (PER-BAB MANDIRI)
+           ========================================================================= */
+        const STORAGE_KEY = 'petualangan_logika_bebras_v1';
+
+        // Default: Awal Bab 1 (Level 1), Bab 2 (Level 6), Bab 3 (Level 11), Bab 4 (Level 16), dan Bab 5 (Level 21) langsung terbuka
+        let gameState = {
+            unlockedLevels: { 1: 1, 2: 6, 3: 11, 4: 16, 5: 21 },
+            stars: {},      // contoh: { 1: 3, 6: 2, 11: 3, 16: 3, 21: 3 }
+            score: 0
+        };
+
+        // State sesi level yang sedang dimainkan
+        let currentLevelIndex = 0;
+        let currentAttempts = 1;
+        let levelSolved = false;
+
+        // State khusus Bab 1 (Sorting)
+        let currentItemsOrder = [];
+        let selectedSwapIndex = null;
+        let draggedIndex = null;
+        let selectedBonusId = null;
+
+        // State khusus Bab 2 (Kereta Pola)
+        let selectedTrainOption = null;
+
+        // State khusus Bab 5 (Menyusun Blok Kata)
+        let sentenceState = {
+            currentWords: [],
+            selectedIdx: null,
+            draggedIdx: null
+        };
+
+        // State khusus Bab 4 (Pemrograman Visual Labirin)
+        let mazeState = {
+            program: [],          // array of { id, type: 'forward'|'turn_left'|'turn_right'|'repeat', count?: number, inner?: 'forward'|'turn_left'|'turn_right' }
+            charX: 0,
+            charY: 0,
+            charDir: 1,           // 0: Atas, 1: Kanan, 2: Bawah, 3: Kiri
+            visitedCells: [],
+            isRunning: false,
+            activeBlockId: null,
+            status: 'idle',       // 'idle' | 'running' | 'crashed' | 'short' | 'won'
+            execTimer: null,
+            draggedPaletteType: null,
+            draggedProgramIdx: null
+        };
+
+        function cleanupMazeGame() {
+            mazeState.isRunning = false;
+            mazeState.activeBlockId = null;
+            if (mazeState.execTimer) {
+                clearTimeout(mazeState.execTimer);
+                mazeState.execTimer = null;
+            }
+        }
+
+        // State khusus Bab 3 (Falling Words Typing Game)
+        let typingState = {
+            active: false,
+            paused: false,
+            gameOver: false,
+            lives: 3,
+            completedCount: 0,
+            sessionScore: 0,
+            fallingWords: [],
+            wordPool: [],
+            nextWordId: 1,
+            lastFrameTime: 0,
+            lastSpawnTime: 0,
+            rafId: null,
+            characterHurtTimeout: null,
+            characterEatTimeout: null,
+            laserLine: null
+        };
+
+        function cleanupTypingGame() {
+            typingState.active = false;
+            typingState.paused = false;
+            if (typingState.rafId) {
+                cancelAnimationFrame(typingState.rafId);
+                typingState.rafId = null;
+            }
+            if (typingState.characterHurtTimeout) {
+                clearTimeout(typingState.characterHurtTimeout);
+                typingState.characterHurtTimeout = null;
+            }
+            if (typingState.characterEatTimeout) {
+                clearTimeout(typingState.characterEatTimeout);
+                typingState.characterEatTimeout = null;
+            }
+        }
+
+        function getChapterMaxUnlocked(chapter) {
+            const bounds = {
+                1: { start: 1, end: 5 },
+                2: { start: 6, end: 10 },
+                3: { start: 11, end: 15 },
+                4: { start: 16, end: 20 },
+                5: { start: 21, end: 25 }
+            };
+            const { start, end } = bounds[chapter] || { start: 1, end: 5 };
+            const val = gameState.unlockedLevels && gameState.unlockedLevels[chapter];
+            if (typeof val !== 'number' || val < start) return start;
+            return Math.min(val, end);
+        }
+
+        function loadProgress() {
+            try {
+                const raw = localStorage.getItem(STORAGE_KEY);
+                if (raw) {
+                    const parsed = JSON.parse(raw);
+                    let chap1Unlocked = 1;
+                    let chap2Unlocked = 6;
+                    let chap3Unlocked = 11;
+                    let chap4Unlocked = 16;
+                    let chap5Unlocked = 21;
+
+                    if (parsed.unlockedLevels) {
+                        chap1Unlocked = Math.max(1, Math.min(5, parsed.unlockedLevels[1] || 1));
+                        chap2Unlocked = Math.max(6, Math.min(10, parsed.unlockedLevels[2] || 6));
+                        chap3Unlocked = Math.max(11, Math.min(15, parsed.unlockedLevels[3] || 11));
+                        chap4Unlocked = Math.max(16, Math.min(20, parsed.unlockedLevels[4] || 16));
+                        chap5Unlocked = Math.max(21, Math.min(25, parsed.unlockedLevels[5] || 21));
+                    } else if (typeof parsed.unlockedLevel === 'number') {
+                        chap1Unlocked = Math.max(1, Math.min(5, parsed.unlockedLevel));
+                        chap2Unlocked = Math.max(6, Math.min(10, parsed.unlockedLevel));
+                        chap3Unlocked = Math.max(11, Math.min(15, parsed.unlockedLevel));
+                        chap4Unlocked = Math.max(16, Math.min(20, parsed.unlockedLevel));
+                        chap5Unlocked = Math.max(21, Math.min(25, parsed.unlockedLevel));
+                    }
+
+                    gameState = {
+                        unlockedLevels: {
+                            1: chap1Unlocked,
+                            2: chap2Unlocked,
+                            3: chap3Unlocked,
+                            4: chap4Unlocked,
+                            5: chap5Unlocked
+                        },
+                        stars: parsed.stars || {},
+                        score: parsed.score || 0
+                    };
+                }
+            } catch (e) {
+                console.warn('Gagal memuat localStorage:', e);
+            }
+            updateHeaderStats();
+        }
+
+        function saveProgress() {
+            try {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(gameState));
+            } catch (e) {
+                console.warn('Gagal menyimpan localStorage:', e);
+            }
+            updateHeaderStats();
+        }
+
+        function updateHeaderStats() {
+            const totalStars = Object.values(gameState.stars).reduce((a, b) => a + b, 0);
+            const maxStars = LEVELS.length * 3;
+            document.getElementById('header-stars').textContent = `${totalStars}/${maxStars}`;
+            document.getElementById('header-score').textContent = gameState.score;
+        }
+
+        /* =========================================================================
+           6. NAVIGASI & RENDER PETA LEVEL
+           ========================================================================= */
+        function navigateTo(viewName) {
+            SoundFX.click();
+            if (viewName !== 'game') {
+                cleanupTypingGame();
+                cleanupMazeGame();
+            }
+            document.getElementById('view-map').classList.add('hidden');
+            document.getElementById('view-game').classList.add('hidden');
+            document.getElementById('view-victory').classList.add('hidden');
+
+            if (viewName === 'map') {
+                renderLevelMap();
+                document.getElementById('view-map').classList.remove('hidden');
+            } else if (viewName === 'game') {
+                document.getElementById('view-game').classList.remove('hidden');
+            } else if (viewName === 'victory') {
+                const totalStars = Object.values(gameState.stars).reduce((a, b) => a + b, 0);
+                const maxStars = LEVELS.length * 3;
+                document.getElementById('victory-stars').textContent = `${totalStars} / ${maxStars} ⭐`;
+                document.getElementById('victory-score').textContent = gameState.score;
+                document.getElementById('view-victory').classList.remove('hidden');
+            }
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function renderLevelMap() {
+            const grid1 = document.getElementById('grid-chapter-1');
+            const grid2 = document.getElementById('grid-chapter-2');
+            const grid3 = document.getElementById('grid-chapter-3');
+            const grid4 = document.getElementById('grid-chapter-4');
+            const grid5 = document.getElementById('grid-chapter-5');
+            grid1.innerHTML = '';
+            grid2.innerHTML = '';
+            grid3.innerHTML = '';
+            grid4.innerHTML = '';
+            grid5.innerHTML = '';
+
+            let chap1Done = 0;
+            let chap2Done = 0;
+            let chap3Done = 0;
+            let chap4Done = 0;
+            let chap5Done = 0;
+
+            LEVELS.forEach((lvl, idx) => {
+                const chapterMaxUnlocked = getChapterMaxUnlocked(lvl.chapter);
+                const isUnlocked = lvl.id <= chapterMaxUnlocked;
+                const earnedStars = gameState.stars[lvl.id] || 0;
+                if (earnedStars > 0) {
+                    if (lvl.chapter === 1) chap1Done++;
+                    else if (lvl.chapter === 2) chap2Done++;
+                    else if (lvl.chapter === 3) chap3Done++;
+                    else if (lvl.chapter === 4) chap4Done++;
+                    else chap5Done++;
+                }
+
+                const card = document.createElement('button');
+                card.disabled = !isUnlocked;
+                card.onclick = () => startLevel(idx);
+
+                const baseColors = lvl.chapter === 1
+                    ? 'border-sky-200 hover:border-sky-400 bg-gradient-to-b from-white to-sky-50/60'
+                    : lvl.chapter === 2
+                        ? 'border-indigo-200 hover:border-indigo-400 bg-gradient-to-b from-white to-indigo-50/60'
+                        : lvl.chapter === 3
+                            ? 'border-amber-200 hover:border-amber-400 bg-gradient-to-b from-white to-amber-50/60'
+                            : lvl.chapter === 4
+                                ? 'border-purple-200 hover:border-purple-400 bg-gradient-to-b from-white to-purple-50/60'
+                                : 'border-fuchsia-200 hover:border-fuchsia-400 bg-gradient-to-b from-white to-fuchsia-50/60';
+
+                const badgeColors = lvl.chapter === 1
+                    ? 'bg-sky-100 text-sky-700'
+                    : lvl.chapter === 2
+                        ? 'bg-indigo-100 text-indigo-700'
+                        : lvl.chapter === 3
+                            ? 'bg-amber-100 text-amber-800'
+                            : lvl.chapter === 4
+                                ? 'bg-purple-100 text-purple-700'
+                                : 'bg-fuchsia-100 text-fuchsia-700';
+
+                const actionTextColor = lvl.chapter === 1
+                    ? 'text-sky-600'
+                    : lvl.chapter === 2
+                        ? 'text-indigo-600'
+                        : lvl.chapter === 3
+                            ? 'text-amber-700'
+                            : lvl.chapter === 4
+                                ? 'text-purple-600'
+                                : 'text-fuchsia-600';
+
+                card.className = `text-left p-4 rounded-2xl border-2 transition-all flex flex-col justify-between h-full ${
+                    isUnlocked
+                        ? `${baseColors} shadow-xs hover:shadow-md hover:-translate-y-1 cursor-pointer`
+                        : 'border-slate-200 bg-slate-100/80 opacity-70 cursor-not-allowed'
+                }`;
+
+                // Bintang 1..3
+                let starsHTML = '';
+                for (let s = 1; s <= 3; s++) {
+                    starsHTML += `<span class="text-sm ${s <= earnedStars ? 'text-amber-400' : 'text-slate-300'}">★</span>`;
+                }
+
+                card.innerHTML = `
+                    <div>
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="font-display font-bold text-xs px-2.5 py-1 rounded-lg ${
+                                isUnlocked ? badgeColors : 'bg-slate-200 text-slate-500'
+                            }">
+                                Level ${lvl.id}
+                            </span>
+                            <div class="flex items-center gap-0.5">
+                                ${isUnlocked ? starsHTML : '<span class="text-sm">🔒</span>'}
+                            </div>
+                        </div>
+                        <h4 class="font-display font-bold text-base text-slate-800 leading-snug mb-1">${lvl.title}</h4>
+                        <p class="text-xs text-slate-500 leading-relaxed">${lvl.shortDesc}</p>
+                    </div>
+                    <div class="mt-4 pt-2 border-t border-slate-100 flex items-center justify-between text-xs font-bold">
+                        <span class="${isUnlocked ? (earnedStars > 0 ? 'text-emerald-600' : actionTextColor) : 'text-slate-400'}">
+                            ${!isUnlocked ? 'Terkunci' : (earnedStars > 0 ? 'Mainkan Lagi' : 'Mulai Tantangan')}
+                        </span>
+                        ${isUnlocked ? '<span>➡</span>' : ''}
+                    </div>
+                `;
+
+                if (lvl.chapter === 1) grid1.appendChild(card);
+                else if (lvl.chapter === 2) grid2.appendChild(card);
+                else if (lvl.chapter === 3) grid3.appendChild(card);
+                else if (lvl.chapter === 4) grid4.appendChild(card);
+                else grid5.appendChild(card);
+            });
+
+            const totalDone = chap1Done + chap2Done + chap3Done + chap4Done + chap5Done;
+            document.getElementById('map-progress-text').textContent = `${totalDone} / ${LEVELS.length} Level`;
+            document.getElementById('chap1-badge').textContent = `${chap1Done}/5 Selesai`;
+            document.getElementById('chap2-badge').textContent = `${chap2Done}/5 Selesai`;
+            document.getElementById('chap3-badge').textContent = `${chap3Done}/5 Selesai`;
+            document.getElementById('chap4-badge').textContent = `${chap4Done}/5 Selesai`;
+            document.getElementById('chap5-badge').textContent = `${chap5Done}/5 Selesai`;
+        }
+
+        // Memulai langsung bab tertentu dari level awal bab atau melanjutkan level terbuka yang belum selesai
+        function startChapter(chapterNum) {
+            const chapterLevels = LEVELS.filter(l => l.chapter === chapterNum);
+            const maxUnlocked = getChapterMaxUnlocked(chapterNum);
+
+            const nextUnsolved = chapterLevels.find(
+                l => l.id <= maxUnlocked && !(gameState.stars[l.id] > 0)
+            );
+
+            const targetLevel = nextUnsolved || chapterLevels[0];
+            const targetIndex = LEVELS.findIndex(l => l.id === targetLevel.id);
+            startLevel(targetIndex >= 0 ? targetIndex : 0);
+        }
+
+        // Mencari level pertama yang belum selesai di antara seluruh level yang sudah terbuka di semua bab
+        function playNextUnlocked() {
+            const unlockedLevelsList = LEVELS.filter(
+                l => l.id <= getChapterMaxUnlocked(l.chapter)
+            );
+
+            const firstUnsolved = unlockedLevelsList.find(
+                l => !(gameState.stars[l.id] > 0)
+            );
+
+            if (firstUnsolved) {
+                const idx = LEVELS.findIndex(l => l.id === firstUnsolved.id);
+                startLevel(idx >= 0 ? idx : 0);
+                return;
+            }
+
+            const lastUnlocked = unlockedLevelsList[unlockedLevelsList.length - 1] || LEVELS[0];
+            const idx = LEVELS.findIndex(l => l.id === lastUnlocked.id);
+            startLevel(idx >= 0 ? idx : 0);
+        }
+
+        /* =========================================================================
+           7. LOGIKA PERMAINAN LEVEL (BAB 1, BAB 2, & BAB 3)
+           ========================================================================= */
+        function shuffleArrayNotSorted(arr) {
+            let copy = [...arr];
+            let attempts = 0;
+            do {
+                for (let i = copy.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [copy[i], copy[j]] = [copy[j], copy[i]];
+                }
+                attempts++;
+            } while (isSortedAscending(copy) && attempts < 15);
+            return copy;
+        }
+
+        function isSortedAscending(arr) {
+            for (let i = 0; i < arr.length - 1; i++) {
+                if (arr[i].height > arr[i + 1].height) return false;
+            }
+            return true;
+        }
+
+        function startLevel(index) {
+            cleanupTypingGame();
+            cleanupMazeGame();
+            currentLevelIndex = index;
+            const lvl = LEVELS[index];
+
+            currentAttempts = 1;
+            levelSolved = false;
+            selectedSwapIndex = null;
+            selectedBonusId = null;
+            selectedTrainOption = null;
+
+            // Update Header Soal
+            document.getElementById('game-chapter-pill').textContent = `Bab ${lvl.chapter}`;
+            document.getElementById('game-chapter-pill').className = lvl.chapter === 1
+                ? 'bg-sky-100 text-sky-800 font-bold text-xs px-3 py-1.5 rounded-full'
+                : lvl.chapter === 2
+                    ? 'bg-indigo-100 text-indigo-800 font-bold text-xs px-3 py-1.5 rounded-full'
+                    : lvl.chapter === 3
+                        ? 'bg-amber-100 text-amber-800 font-bold text-xs px-3 py-1.5 rounded-full'
+                        : lvl.chapter === 4
+                            ? 'bg-purple-100 text-purple-800 font-bold text-xs px-3 py-1.5 rounded-full'
+                            : 'bg-fuchsia-100 text-fuchsia-800 font-bold text-xs px-3 py-1.5 rounded-full';
+
+            document.getElementById('game-level-indicator').textContent = `Level ${lvl.id} / ${LEVELS.length}`;
+            document.getElementById('game-title').textContent = `Level ${lvl.id}: ${lvl.title}`;
+            document.getElementById('game-instruction').textContent = lvl.instruction;
+            document.getElementById('game-attempts').textContent = currentAttempts;
+
+            // Sembunyikan feedback & atur tombol bawah sesuai tipe level
+            hideFeedback();
+            const btnCheck = document.getElementById('btn-check');
+            const btnNext = document.getElementById('btn-next-level');
+            const attemptsBadge = document.getElementById('header-attempts-badge');
+
+            btnNext.classList.add('hidden');
+
+            if (lvl.type === 'typing') {
+                btnCheck.classList.add('hidden');
+                attemptsBadge.classList.add('hidden');
+                initTypingGame(lvl);
+            } else if (lvl.type === 'maze') {
+                btnCheck.classList.add('hidden');
+                attemptsBadge.classList.remove('hidden');
+                initMazeGame(lvl);
+            } else {
+                btnCheck.classList.remove('hidden');
+                attemptsBadge.classList.remove('hidden');
+                if (lvl.type === 'sort' || lvl.type === 'sort_bonus') {
+                    currentItemsOrder = shuffleArrayNotSorted(lvl.items);
+                    renderSortingWorkspace();
+                } else if (lvl.type === 'train') {
+                    renderTrainWorkspace();
+                } else if (lvl.type === 'sentence') {
+                    initSentenceGame(lvl);
+                }
+            }
+
+            navigateTo('game');
+        }
+
+        /* ---------------- RENDER & INTERAKSI BAB 1 (SORTING) ---------------- */
+        function renderSortingWorkspace() {
+            const lvl = LEVELS[currentLevelIndex];
+            const workspace = document.getElementById('game-workspace');
+
+            const colsClass = currentItemsOrder.length >= 7
+                ? 'grid-cols-2 sm:grid-cols-4 lg:grid-cols-7'
+                : currentItemsOrder.length === 6
+                    ? 'grid-cols-2 sm:grid-cols-3 lg:grid-cols-6'
+                    : 'grid-cols-2 sm:grid-cols-3 lg:grid-cols-5';
+
+            let html = `
+                <!-- Panduan Arah Pengurutan -->
+                <div class="flex items-center justify-between bg-sky-100/80 border border-sky-200 rounded-2xl px-4 py-2.5 mb-5 text-xs sm:text-sm font-bold text-sky-900">
+                    <span class="flex items-center gap-1.5">📉 Paling Kecil / Rendah</span>
+                    <span class="hidden sm:inline text-sky-600 font-normal">Seret kartu atau ketuk 2 kartu untuk menukar</span>
+                    <span class="flex items-center gap-1.5">Paling Besar / Tinggi 📈</span>
+                </div>
+
+                <!-- Grid Kartu Objek yang Dapat Diurutkan -->
+                <div id="sortable-grid" class="grid ${colsClass} gap-3 sm:gap-4 items-end">
+                    ${currentItemsOrder.map((item, idx) => `
+                        <div
+                            draggable="${!levelSolved}"
+                            ondragstart="handleDragStart(event, ${idx})"
+                            ondragover="handleDragOver(event, ${idx})"
+                            ondragleave="handleDragLeave(event)"
+                            ondrop="handleDrop(event, ${idx})"
+                            ondragend="handleDragEnd(event)"
+                            onclick="handleCardTap(${idx})"
+                            class="sortable-card bg-white rounded-2xl border-2 ${selectedSwapIndex === idx ? 'selected-swap' : 'border-slate-200 hover:border-sky-300'} p-3 flex flex-col items-center justify-between shadow-xs select-none"
+                        >
+                            <!-- Nomor Urutan Posisi -->
+                            <div class="w-full flex items-center justify-between mb-2">
+                                <span class="w-6 h-6 rounded-full bg-slate-100 text-slate-600 font-display font-bold text-xs flex items-center justify-center">
+                                    ${idx + 1}
+                                </span>
+                                <!-- Tombol Geser Kiri/Kanan Cepat (Aksesibilitas Layar Sentuh) -->
+                                <div class="flex items-center gap-1" onclick="event.stopPropagation()">
+                                    <button type="button" ${idx === 0 || levelSolved ? 'disabled' : ''} onclick="moveCard(${idx}, -1)"
+                                        class="w-6 h-6 rounded-lg bg-slate-100 hover:bg-sky-100 disabled:opacity-30 text-slate-700 font-bold text-xs flex items-center justify-center" title="Geser ke Kiri">
+                                        ◀
+                                    </button>
+                                    <button type="button" ${idx === currentItemsOrder.length - 1 || levelSolved ? 'disabled' : ''} onclick="moveCard(${idx}, 1)"
+                                        class="w-6 h-6 rounded-lg bg-slate-100 hover:bg-sky-100 disabled:opacity-30 text-slate-700 font-bold text-xs flex items-center justify-center" title="Geser ke Kanan">
+                                        ▶
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Area Visual SVG dengan Garis Tanah -->
+                            <div class="w-full h-[160px] flex items-end justify-center border-b-4 border-emerald-500 pb-0.5 mb-2 bg-gradient-to-b from-sky-50/40 to-emerald-50/30 rounded-t-xl">
+                                ${renderSortingItemSVG(lvl.theme, item.variant, item.height)}
+                            </div>
+
+                            <!-- Label Nama Objek -->
+                            <span class="text-xs font-bold text-slate-700 text-center leading-tight">
+                                ${item.label}
+                            </span>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+
+            // Jika Level 5 (Memiliki Pertanyaan Bonus Urutan ke-4)
+            if (lvl.type === 'sort_bonus') {
+                html += `
+                <div class="mt-6 bg-amber-50/90 border-2 border-amber-200 rounded-2xl p-4 sm:p-5">
+                    <div class="flex items-center gap-2 mb-2">
+                        <span class="bg-amber-400 text-slate-900 font-display font-bold text-xs px-2.5 py-0.5 rounded-full">PERTANYAAN BONUS</span>
+                        <h4 class="font-bold text-slate-800 text-sm sm:text-base">${lvl.bonusQuestion}</h4>
+                    </div>
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5 mt-3">
+                        ${lvl.items.map(item => `
+                            <button type="button" onclick="selectBonusOption('${item.id}')"
+                                class="p-2.5 rounded-xl border-2 text-xs sm:text-sm font-bold transition-all flex items-center justify-center gap-2 ${
+                                    selectedBonusId === item.id
+                                        ? 'border-amber-500 bg-amber-200/70 text-slate-900 shadow-xs'
+                                        : 'border-amber-200/80 bg-white hover:bg-amber-100/50 text-slate-700'
+                                }">
+                                <span>${item.label}</span>
+                            </button>
+                        `).join('')}
+                    </div>
+                </div>`;
+            }
+
+            workspace.innerHTML = html;
+        }
+
+        // Mekanik Drag & Drop HTML5
+        function handleDragStart(e, idx) {
+            if (levelSolved) return;
+            draggedIndex = idx;
+            e.dataTransfer.effectAllowed = 'move';
+            e.currentTarget.classList.add('dragging');
+        }
+
+        function handleDragOver(e, idx) {
+            e.preventDefault();
+            if (draggedIndex === null || draggedIndex === idx) return;
+            e.currentTarget.classList.add('drag-over');
+        }
+
+        function handleDragLeave(e) {
+            e.currentTarget.classList.remove('drag-over');
+        }
+
+        function handleDrop(e, targetIdx) {
+            e.preventDefault();
+            e.currentTarget.classList.remove('drag-over');
+            if (draggedIndex === null || draggedIndex === targetIdx || levelSolved) return;
+
+            const movedItem = currentItemsOrder.splice(draggedIndex, 1)[0];
+            currentItemsOrder.splice(targetIdx, 0, movedItem);
+            draggedIndex = null;
+            selectedSwapIndex = null;
+            SoundFX.swap();
+            renderSortingWorkspace();
+        }
+
+        function handleDragEnd(e) {
+            e.currentTarget.classList.remove('dragging');
+            draggedIndex = null;
+        }
+
+        // Mekanik Ketuk-untuk-Menukar (Tap-to-Swap ramah layar sentuh)
+        function handleCardTap(idx) {
+            if (levelSolved) return;
+            if (selectedSwapIndex === null) {
+                selectedSwapIndex = idx;
+                SoundFX.click();
+                renderSortingWorkspace();
+            } else if (selectedSwapIndex === idx) {
+                selectedSwapIndex = null;
+                SoundFX.click();
+                renderSortingWorkspace();
+            } else {
+                const temp = currentItemsOrder[selectedSwapIndex];
+                currentItemsOrder[selectedSwapIndex] = currentItemsOrder[idx];
+                currentItemsOrder[idx] = temp;
+                selectedSwapIndex = null;
+                SoundFX.swap();
+                renderSortingWorkspace();
+            }
+        }
+
+        // Tombol panah kiri/kanan pada kartu
+        function moveCard(idx, dir) {
+            if (levelSolved) return;
+            const newIdx = idx + dir;
+            if (newIdx < 0 || newIdx >= currentItemsOrder.length) return;
+            const temp = currentItemsOrder[idx];
+            currentItemsOrder[idx] = currentItemsOrder[newIdx];
+            currentItemsOrder[newIdx] = temp;
+            selectedSwapIndex = null;
+            SoundFX.swap();
+            renderSortingWorkspace();
+        }
+
+        function selectBonusOption(id) {
+            if (levelSolved) return;
+            selectedBonusId = id;
+            SoundFX.click();
+            renderSortingWorkspace();
+        }
+
+        /* ---------------- RENDER & INTERAKSI BAB 2 (KERETA POLA) ---------------- */
+        function renderTrainWorkspace() {
+            const lvl = LEVELS[currentLevelIndex];
+            const workspace = document.getElementById('game-workspace');
+
+            const chosenObj = lvl.options.find(o => o.id === selectedTrainOption);
+            const previewLayers = chosenObj ? chosenObj.layers : null;
+
+            workspace.innerHTML = `
+                <!-- Visualisasi Kereta & 4 Trailer -->
+                <div class="bg-sky-50/90 border border-sky-200 rounded-2xl p-3 sm:p-5 mb-6">
+                    ${renderTrainSceneSVG(lvl.trailers, previewLayers)}
+                </div>
+
+                <!-- Pilihan Jawaban A, B, C, D -->
+                <div>
+                    <h4 class="font-display font-bold text-slate-700 text-sm sm:text-base mb-3 text-center">
+                        Pilih susunan balok yang paling tepat untuk mengisi <span class="text-indigo-600">Trailer 4</span>:
+                    </h4>
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 max-w-3xl mx-auto">
+                        ${lvl.options.map(opt => {
+                            const isSelected = selectedTrainOption === opt.id;
+                            return `
+                            <button type="button" onclick="selectTrainAnswer('${opt.id}')"
+                                class="p-3 sm:p-4 rounded-2xl border-2 transition-all flex flex-col items-center justify-between ${
+                                    isSelected
+                                        ? 'border-indigo-600 bg-indigo-50 shadow-md -translate-y-1'
+                                        : 'border-slate-200 bg-white hover:border-indigo-300 hover:bg-slate-50'
+                                }">
+                                <div class="w-full flex items-center justify-between mb-2">
+                                    <span class="w-7 h-7 rounded-xl font-display font-bold text-sm flex items-center justify-center ${
+                                        isSelected ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-700'
+                                    }">
+                                        ${opt.id}
+                                    </span>
+                                    ${isSelected ? '<span class="text-indigo-600 text-xs font-bold">Dipilih</span>' : ''}
+                                </div>
+                                <div class="my-1">
+                                    ${renderBlockStackSVG(opt.layers, 96, 84)}
+                                </div>
+                            </button>`;
+                        }).join('')}
+                    </div>
+                </div>
+            `;
+        }
+
+        function selectTrainAnswer(optId) {
+            if (levelSolved) return;
+            selectedTrainOption = optId;
+            SoundFX.click();
+            renderTrainWorkspace();
+        }
+
+        /* ---------------- RENDER & INTERAKSI BAB 3 (FALLING WORDS TYPING) ---------------- */
+        function initTypingGame(lvl) {
+            // Siapkan daftar kata acak sejumlah targetWords
+            const pool = [];
+            while (pool.length < lvl.targetWords) {
+                const shuffled = [...lvl.words].sort(() => Math.random() - 0.5);
+                pool.push(...shuffled);
+            }
+
+            typingState = {
+                active: true,
+                paused: false,
+                gameOver: false,
+                lives: 3,
+                completedCount: 0,
+                sessionScore: 0,
+                fallingWords: [],
+                wordPool: pool.slice(0, lvl.targetWords),
+                nextWordId: 1,
+                lastFrameTime: performance.now(),
+                lastSpawnTime: performance.now() - lvl.spawnIntervalMs + 450,
+                rafId: null,
+                characterHurtTimeout: null,
+                characterEatTimeout: null,
+                laserLine: null
+            };
+
+            renderTypingWorkspace();
+
+            setTimeout(() => {
+                const inputEl = document.getElementById('typing-input');
+                if (inputEl) inputEl.focus();
+            }, 80);
+
+            typingState.rafId = requestAnimationFrame(typingGameLoop);
+        }
+
+        function renderTypingWorkspace() {
+            const lvl = LEVELS[currentLevelIndex];
+            const workspace = document.getElementById('game-workspace');
+
+            workspace.innerHTML = `
+                <div class="max-w-2xl mx-auto">
+                    <!-- Kartu Arena Utama Game Mengetik (Terinspirasi Gambar Referensi) -->
+                    <div id="typing-arena-card" class="relative bg-gradient-to-b from-sky-50/90 via-white to-sky-50/70 rounded-3xl border-2 border-sky-200/80 shadow-inner overflow-hidden">
+                        
+                        <!-- Bar Status Atas Dalam Arena -->
+                        <div class="flex items-center justify-between px-4 py-3 bg-white/80 backdrop-blur-xs border-b border-sky-100 z-20 relative">
+                            <!-- Indikator 3 Nyawa -->
+                            <div class="flex items-center gap-1.5 bg-rose-50 border border-rose-200 px-3 py-1 rounded-full" title="Sisa Nyawa">
+                                <span class="text-xs font-bold text-rose-700 mr-0.5">Nyawa:</span>
+                                <span id="typing-lives-display" class="text-base tracking-wider">❤️❤️❤️</span>
+                            </div>
+
+                            <!-- Indikator Progres Kata -->
+                            <div class="flex items-center gap-1.5 bg-sky-100/80 border border-sky-200 px-3.5 py-1 rounded-full">
+                                <span class="text-xs font-bold text-sky-800">Target:</span>
+                                <span id="typing-progress-display" class="font-display font-bold text-sky-900 text-sm">
+                                    0 / ${lvl.targetWords} Kata
+                                </span>
+                            </div>
+
+                            <!-- Tombol Mute Cepat di Pojok Kanan Atas Arena -->
+                            <button type="button" onclick="toggleSound(); updateArenaSoundIcon();" class="p-2 rounded-xl hover:bg-slate-100 text-slate-500 transition-colors" title="Suara Efek">
+                                <svg id="arena-sound-icon" class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
+                                </svg>
+                            </button>
+                        </div>
+
+                        <!-- Area Langit Tempat Kata Jatuh & Karakter Kuning -->
+                        <div id="typing-sky-stage" onclick="focusTypingInput()" class="relative w-full h-[360px] sm:h-[400px] overflow-hidden cursor-text select-none">
+                            <!-- Layer Kata-kata Jatuh -->
+                            <div id="typing-words-layer" class="absolute inset-0 z-10 pointer-events-none"></div>
+
+                            <!-- Garis Sinar Energi saat Kata Berhasil Diketuk/Ditembak -->
+                            <svg id="typing-laser-svg" class="absolute inset-0 w-full h-full pointer-events-none z-15"></svg>
+
+                            <!-- Karakter Kuning Mirip Pac-Man di Bawah Tengah -->
+                            <div id="typing-character" class="absolute bottom-3 left-1/2 -translate-x-1/2 z-20 transition-transform duration-150">
+                                <svg id="pacman-svg" width="68" height="68" viewBox="0 0 68 68" class="drop-shadow-md">
+                                    <!-- Badan Bulat Kuning dengan Mulut Terbuka ke Kiri (sesuai gambar referensi) -->
+                                    <path id="pacman-body" d="M 34,34 L 5.5,24.5 A 30,30 0 1,1 5.5,43.5 Z" fill="#FACC15" stroke="#EAB308" stroke-width="1.5"/>
+                                    <!-- Mata Hitam dengan Kilau Putih -->
+                                    <circle cx="34" cy="18" r="5" fill="#FFFFFF"/>
+                                    <circle cx="33" cy="18" r="3" fill="#0F172A"/>
+                                </svg>
+                            </div>
+
+                            <!-- Overlay Pause -->
+                            <div id="typing-pause-overlay" class="hidden absolute inset-0 z-30 bg-slate-900/45 backdrop-blur-xs flex flex-col items-center justify-center p-4 text-center">
+                                <div class="bg-white rounded-3xl p-6 shadow-xl max-w-xs w-full animate-pop">
+                                    <div class="text-4xl mb-2">⏸️</div>
+                                    <h4 class="font-display font-bold text-xl text-slate-800 mb-1">Permainan Dijeda</h4>
+                                    <p class="text-xs text-slate-500 mb-4">Tekan Lanjutkan untuk meneruskan kata yang jatuh.</p>
+                                    <button type="button" onclick="toggleTypingPause()" class="btn-game w-full bg-sky-600 hover:bg-sky-500 text-white font-display font-bold py-2.5 rounded-2xl text-sm">
+                                        ▶ Lanjutkan
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Overlay Game Over (Nyawa Habis) -->
+                            <div id="typing-gameover-overlay" class="hidden absolute inset-0 z-30 bg-rose-950/60 backdrop-blur-xs flex flex-col items-center justify-center p-4 text-center">
+                                <div class="bg-white rounded-3xl p-6 shadow-2xl max-w-sm w-full border-2 border-rose-200 animate-pop">
+                                    <div class="w-16 h-16 mx-auto mb-3 rounded-2xl bg-rose-100 text-rose-600 flex items-center justify-center text-3xl">
+                                        💔
+                                    </div>
+                                    <h4 class="font-display font-bold text-2xl text-slate-800 mb-1">Nyawa Habis!</h4>
+                                    <p id="typing-gameover-reason" class="text-xs sm:text-sm text-slate-600 mb-5 leading-relaxed">
+                                        Kamu kehabisan 3 nyawa. Tetap fokus dan ketik kata dengan tepat sebelum menyentuh karakter!
+                                    </p>
+                                    <div class="flex flex-col sm:flex-row gap-2.5">
+                                        <button type="button" onclick="restartTypingLevel()" class="btn-game flex-1 bg-amber-400 hover:bg-amber-300 text-slate-900 font-display font-bold py-2.5 px-4 rounded-2xl text-sm">
+                                            🔄 Coba Lagi
+                                        </button>
+                                        <button type="button" onclick="navigateTo('map')" class="btn-game flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-display font-bold py-2.5 px-4 rounded-2xl text-sm">
+                                            🗺 Peta Level
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Bar Kontrol Bawah (Kotak Input + Counter Digital + Tombol Reset & Pause) -->
+                        <div class="bg-white border-t border-sky-100 p-3 sm:p-4">
+                            <form onsubmit="submitTypedWord(event)" class="flex items-center gap-2 sm:gap-3">
+                                <!-- Tombol Enter/Kirim Kiri (Mirip Ikon Enter di Gambar Referensi) -->
+                                <button type="submit" class="shrink-0 w-11 h-11 rounded-2xl border-2 border-sky-500 bg-sky-50 hover:bg-sky-100 text-sky-600 flex items-center justify-center transition-colors shadow-xs" title="Kirim Kata (Enter)">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 10l-5 5 5 5M4 15h11a4 4 0 004-4V7" />
+                                    </svg>
+                                </button>
+
+                                <!-- Input Ketik Kata -->
+                                <div class="relative flex-grow">
+                                    <input
+                                        id="typing-input"
+                                        type="text"
+                                        autocomplete="off"
+                                        autocorrect="off"
+                                        autocapitalize="off"
+                                        spellcheck="false"
+                                        placeholder="Ketik kata jatuh di sini lalu Enter..."
+                                        oninput="handleTypingInput(this.value)"
+                                        onkeydown="handleTypingKeyDown(event)"
+                                        class="w-full h-11 px-4 rounded-2xl border-2 border-slate-200 focus:border-sky-500 focus:outline-none font-bold text-center text-base sm:text-lg tracking-wide text-slate-800 bg-slate-50/70 focus:bg-white transition-colors"
+                                    />
+                                </div>
+
+                                <!-- Counter Skor Digital (Gaya 00000029 di Gambar Referensi) -->
+                                <div class="hidden sm:flex items-center px-3 h-11 rounded-2xl bg-slate-100 border border-slate-200 font-mono font-bold text-base tracking-wider shrink-0" title="Skor Level Ini">
+                                    <span id="typing-digital-score-pad" class="text-slate-400">000000</span><span id="typing-digital-score-val" class="text-slate-800">00</span>
+                                </div>
+
+                                <!-- Tombol Restart Level -->
+                                <button type="button" onclick="restartTypingLevel()" class="shrink-0 w-11 h-11 rounded-2xl border-2 border-sky-500 bg-white hover:bg-sky-50 text-sky-600 flex items-center justify-center transition-colors shadow-xs" title="Ulangi Level">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.3" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                    </svg>
+                                </button>
+
+                                <!-- Tombol Pause / Resume -->
+                                <button type="button" id="btn-typing-pause" onclick="toggleTypingPause()" class="shrink-0 w-11 h-11 rounded-2xl border-2 border-sky-500 bg-white hover:bg-sky-50 text-sky-600 flex items-center justify-center transition-colors shadow-xs" title="Jeda / Lanjutkan">
+                                    <svg id="icon-typing-pause" class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M10 9v6m4-6v6" />
+                                    </svg>
+                                    <svg id="icon-typing-play" class="w-5 h-5 hidden" fill="currentColor" viewBox="0 0 24 24">
+                                        <path d="M8 5v14l11-7z" />
+                                    </svg>
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            updateArenaSoundIcon();
+            updateTypingHUD();
+        }
+
+        function updateArenaSoundIcon() {
+            const icon = document.getElementById('arena-sound-icon');
+            if (!icon) return;
+            icon.style.opacity = SoundFX.enabled ? '1' : '0.35';
+        }
+
+        function focusTypingInput() {
+            if (!typingState.active || typingState.paused || typingState.gameOver || levelSolved) return;
+            const inputEl = document.getElementById('typing-input');
+            if (inputEl) inputEl.focus();
+        }
+
+        function updateTypingHUD() {
+            const lvl = LEVELS[currentLevelIndex];
+            const livesEl = document.getElementById('typing-lives-display');
+            const progEl = document.getElementById('typing-progress-display');
+            const padEl = document.getElementById('typing-digital-score-pad');
+            const valEl = document.getElementById('typing-digital-score-val');
+
+            if (livesEl) {
+                const fullHearts = '❤️'.repeat(Math.max(0, typingState.lives));
+                const emptyHearts = '🖤'.repeat(Math.max(0, 3 - typingState.lives));
+                livesEl.textContent = fullHearts + emptyHearts;
+            }
+            if (progEl && lvl) {
+                progEl.textContent = `${typingState.completedCount} / ${lvl.targetWords} Kata`;
+            }
+            if (padEl && valEl) {
+                const scoreStr = String(typingState.sessionScore).padStart(8, '0');
+                const firstNonZero = scoreStr.search(/[1-9]/);
+                if (firstNonZero === -1) {
+                    padEl.textContent = '000000';
+                    valEl.textContent = '00';
+                } else {
+                    padEl.textContent = scoreStr.slice(0, firstNonZero);
+                    valEl.textContent = scoreStr.slice(firstNonZero);
+                }
+            }
+        }
+
+        function spawnFallingWord(lvl) {
+            if (typingState.wordPool.length === 0) return;
+            const stage = document.getElementById('typing-sky-stage');
+            const stageW = stage ? stage.clientWidth : 520;
+
+            const wordText = typingState.wordPool.shift();
+            // Posisi horizontal aman agar kapsul tidak terpotong di tepi kiri/kanan
+            const margin = 65;
+            const usableW = Math.max(140, stageW - margin * 2);
+            let x = margin + Math.random() * usableW;
+
+            // Hindari tumpang tindih langsung dengan kata yang baru muncul di atas
+            const topWords = typingState.fallingWords.filter(w => w.y < 75);
+            if (topWords.length > 0) {
+                for (let attempt = 0; attempt < 6; attempt++) {
+                    const candidateX = margin + Math.random() * usableW;
+                    const tooClose = topWords.some(w => Math.abs(w.x - candidateX) < 95);
+                    if (!tooClose) {
+                        x = candidateX;
+                        break;
+                    }
+                }
+            }
+
+            typingState.fallingWords.push({
+                id: typingState.nextWordId++,
+                text: wordText,
+                x: x,
+                y: 16,
+                speed: lvl.fallSpeed * (0.92 + Math.random() * 0.18)
+            });
+        }
+
+        function typingGameLoop(now) {
+            if (!typingState.active) return;
+
+            if (typingState.paused || typingState.gameOver || levelSolved) {
+                typingState.lastFrameTime = now;
+                typingState.rafId = requestAnimationFrame(typingGameLoop);
+                return;
+            }
+
+            const dt = Math.min((now - typingState.lastFrameTime) / 1000, 0.1);
+            typingState.lastFrameTime = now;
+
+            const lvl = LEVELS[currentLevelIndex];
+            const stage = document.getElementById('typing-sky-stage');
+            const stageH = stage ? stage.clientHeight : 380;
+            // Batas vertikal karakter kuning di bawah tengah
+            const characterHitY = stageH - 76;
+
+            // Spawn kata baru jika kuota layar & pool masih ada
+            if (
+                typingState.wordPool.length > 0 &&
+                typingState.fallingWords.length < lvl.maxActive &&
+                (now - typingState.lastSpawnTime >= lvl.spawnIntervalMs || typingState.fallingWords.length === 0)
+            ) {
+                spawnFallingWord(lvl);
+                typingState.lastSpawnTime = now;
+            }
+
+            // Gerakkan kata ke bawah & cek tabrakan dengan karakter kuning
+            let collidedWord = null;
+            for (let i = typingState.fallingWords.length - 1; i >= 0; i--) {
+                const w = typingState.fallingWords[i];
+                w.y += w.speed * dt;
+
+                if (w.y >= characterHitY) {
+                    collidedWord = w;
+                    typingState.fallingWords.splice(i, 1);
+                    break;
+                }
+            }
+
+            if (collidedWord) {
+                // Kata jatuh mengenai karakter kuning -> kurangi 1 nyawa
+                // Kembalikan 1 kata ke pool agar target total kata level tetap bisa dicapai jika nyawa masih ada
+                typingState.wordPool.push(collidedWord.text);
+                handleTypingDamage(`Kata "${collidedWord.text}" jatuh mengenai karakter! (-1 Nyawa)`);
+            }
+
+            renderFallingWordsDOM();
+
+            if (typingState.active && !typingState.gameOver && !levelSolved) {
+                typingState.rafId = requestAnimationFrame(typingGameLoop);
+            }
+        }
+
+        function renderFallingWordsDOM() {
+            const layer = document.getElementById('typing-words-layer');
+            const inputEl = document.getElementById('typing-input');
+            if (!layer) return;
+
+            const currentTyped = inputEl ? inputEl.value.trim().toLowerCase() : '';
+
+            layer.innerHTML = typingState.fallingWords.map(w => {
+                const isPrefixMatch = currentTyped.length > 0 && w.text.toLowerCase().startsWith(currentTyped);
+                let labelHTML = w.text;
+
+                if (isPrefixMatch) {
+                    const matchedPart = w.text.slice(0, currentTyped.length);
+                    const restPart = w.text.slice(currentTyped.length);
+                    labelHTML = `<span class="text-emerald-600 underline decoration-2">${matchedPart}</span><span>${restPart}</span>`;
+                }
+
+                return `
+                    <div
+                        style="left: ${w.x}px; top: ${w.y}px;"
+                        class="absolute -translate-x-1/2 px-4 py-1.5 rounded-full bg-white shadow-md border ${
+                            isPrefixMatch
+                                ? 'border-emerald-400 ring-2 ring-emerald-200 scale-105'
+                                : 'border-slate-100'
+                        } font-bold text-slate-800 text-base sm:text-lg tracking-wide transition-transform duration-75 whitespace-nowrap"
+                    >
+                        ${labelHTML}
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function handleTypingInput(val) {
+            if (!typingState.active || typingState.paused || typingState.gameOver || levelSolved) return;
+            renderFallingWordsDOM();
+        }
+
+        function handleTypingKeyDown(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                submitTypedWord(e);
+            }
+        }
+
+        function submitTypedWord(e) {
+            if (e) e.preventDefault();
+            if (!typingState.active || typingState.paused || typingState.gameOver || levelSolved) return;
+
+            const inputEl = document.getElementById('typing-input');
+            if (!inputEl) return;
+
+            const typed = inputEl.value.trim().toLowerCase();
+            if (!typed) return;
+
+            // Cari kata yang cocok di antara kata-kata yang sedang jatuh (prioritaskan posisi paling bawah)
+            const matchingWords = typingState.fallingWords
+                .filter(w => w.text.toLowerCase() === typed)
+                .sort((a, b) => b.y - a.y);
+
+            if (matchingWords.length > 0) {
+                const target = matchingWords[0];
+                typingState.fallingWords = typingState.fallingWords.filter(w => w.id !== target.id);
+                typingState.completedCount++;
+                typingState.sessionScore += target.text.length * 10;
+
+                inputEl.value = '';
+                SoundFX.swap();
+                triggerCharacterEatEffect(target.x, target.y);
+                updateTypingHUD();
+                renderFallingWordsDOM();
+
+                const lvl = LEVELS[currentLevelIndex];
+                if (typingState.completedCount >= lvl.targetWords) {
+                    completeTypingLevel();
+                } else {
+                    hideFeedback();
+                }
+            } else {
+                // Salah ketik -> nyawa berkurang 1
+                inputEl.value = '';
+                renderFallingWordsDOM();
+                handleTypingDamage(`Salah ketik "${typed}"! Tidak ada kata yang cocok. (-1 Nyawa)`);
+            }
+        }
+
+        function triggerCharacterEatEffect(targetX, targetY) {
+            const charEl = document.getElementById('typing-character');
+            const laserSvg = document.getElementById('typing-laser-svg');
+            const stage = document.getElementById('typing-sky-stage');
+
+            if (charEl) {
+                charEl.classList.add('scale-110');
+                if (typingState.characterEatTimeout) clearTimeout(typingState.characterEatTimeout);
+                typingState.characterEatTimeout = setTimeout(() => {
+                    if (charEl) charEl.classList.remove('scale-110');
+                }, 160);
+            }
+
+            if (laserSvg && stage) {
+                const startX = stage.clientWidth / 2;
+                const startY = stage.clientHeight - 42;
+                laserSvg.innerHTML = `
+                    <line x1="${startX}" y1="${startY}" x2="${targetX}" y2="${targetY + 14}" stroke="#38BDF8" stroke-width="4" stroke-linecap="round" stroke-dasharray="6 4" />
+                    <circle cx="${targetX}" cy="${targetY + 14}" r="14" fill="#FACC15" fill-opacity="0.65" />
+                `;
+                setTimeout(() => {
+                    if (laserSvg) laserSvg.innerHTML = '';
+                }, 180);
+            }
+        }
+
+        function handleTypingDamage(reasonText) {
+            SoundFX.error();
+            typingState.lives = Math.max(0, typingState.lives - 1);
+            updateTypingHUD();
+
+            const arenaCard = document.getElementById('typing-arena-card');
+            const pacBody = document.getElementById('pacman-body');
+            if (arenaCard) {
+                arenaCard.classList.remove('animate-shake');
+                void arenaCard.offsetWidth;
+                arenaCard.classList.add('animate-shake');
+            }
+            if (pacBody) {
+                pacBody.setAttribute('fill', '#EF4444');
+                pacBody.setAttribute('stroke', '#B91C1C');
+                if (typingState.characterHurtTimeout) clearTimeout(typingState.characterHurtTimeout);
+                typingState.characterHurtTimeout = setTimeout(() => {
+                    if (pacBody) {
+                        pacBody.setAttribute('fill', '#FACC15');
+                        pacBody.setAttribute('stroke', '#EAB308');
+                    }
+                }, 320);
+            }
+
+            if (typingState.lives <= 0) {
+                typingState.gameOver = true;
+                typingState.active = false;
+                const inputEl = document.getElementById('typing-input');
+                if (inputEl) inputEl.disabled = true;
+
+                const reasonEl = document.getElementById('typing-gameover-reason');
+                if (reasonEl) reasonEl.textContent = reasonText;
+
+                const overlay = document.getElementById('typing-gameover-overlay');
+                if (overlay) overlay.classList.remove('hidden');
+
+                showFeedback(false, 'Permainan Berakhir (0 Nyawa)', reasonText);
+            } else {
+                showFeedback(false, `Awas! Sisa ${typingState.lives} Nyawa`, reasonText);
+            }
+        }
+
+        function toggleTypingPause() {
+            if (!typingState.active || typingState.gameOver || levelSolved) return;
+            SoundFX.click();
+            typingState.paused = !typingState.paused;
+
+            const overlay = document.getElementById('typing-pause-overlay');
+            const iconPause = document.getElementById('icon-typing-pause');
+            const iconPlay = document.getElementById('icon-typing-play');
+            const inputEl = document.getElementById('typing-input');
+
+            if (overlay) overlay.classList.toggle('hidden', !typingState.paused);
+            if (iconPause) iconPause.classList.toggle('hidden', typingState.paused);
+            if (iconPlay) iconPlay.classList.toggle('hidden', !typingState.paused);
+
+            if (inputEl) {
+                inputEl.disabled = typingState.paused;
+                if (!typingState.paused) inputEl.focus();
+            }
+        }
+
+        function restartTypingLevel() {
+            SoundFX.click();
+            startLevel(currentLevelIndex);
+        }
+
+        function completeTypingLevel() {
+            levelSolved = true;
+            typingState.active = false;
+            SoundFX.success();
+
+            const inputEl = document.getElementById('typing-input');
+            if (inputEl) inputEl.disabled = true;
+
+            const lvl = LEVELS[currentLevelIndex];
+            // Bintang berdasarkan sisa nyawa: 3 nyawa = 3 bintang, 2 nyawa = 2 bintang, 1 nyawa = 1 bintang
+            const earnedStars = Math.max(1, Math.min(3, typingState.lives));
+            const prevStars = gameState.stars[lvl.id] || 0;
+
+            if (earnedStars > prevStars) {
+                gameState.score += (earnedStars - prevStars) * 100;
+                gameState.stars[lvl.id] = earnedStars;
+            }
+
+            const currentChapMax = getChapterMaxUnlocked(3);
+            if (lvl.id >= currentChapMax && lvl.id < 15) {
+                gameState.unlockedLevels[3] = lvl.id + 1;
+            }
+
+            saveProgress();
+
+            const starIcons = '⭐'.repeat(earnedStars);
+            showFeedback(true, `Target Tercapai! (${starIcons})`, `${lvl.explanation} (Sisa nyawa: ${typingState.lives}/3)`);
+
+            const nextBtn = document.getElementById('btn-next-level');
+            nextBtn.classList.remove('hidden');
+
+            if (areAllLevelsCompleted()) {
+                nextBtn.innerHTML = '<span>🏆 Lihat Hasil Akhir</span>';
+            } else if (lvl.id === 15) {
+                nextBtn.innerHTML = '<span>Lanjut ke Bab 4 ➡</span>';
+            } else {
+                nextBtn.innerHTML = '<span>Level Berikutnya ➡</span>';
+            }
+
+            if (typeof confetti === 'function') {
+                confetti({
+                    particleCount: 80,
+                    spread: 70,
+                    origin: { y: 0.65 }
+                });
+            }
+        }
+
+        /* ---------------- RENDER & INTERAKSI BAB 4 (BLOCKLY MAZE) ---------------- */
+        let nextMazeBlockId = 1;
+
+        function initMazeGame(lvl) {
+            mazeState = {
+                program: [],
+                charX: lvl.start.x,
+                charY: lvl.start.y,
+                charDir: lvl.start.dir,
+                visitedCells: [`${lvl.start.x},${lvl.start.y}`],
+                isRunning: false,
+                activeBlockId: null,
+                status: 'idle',
+                execTimer: null,
+                draggedPaletteType: null,
+                draggedProgramIdx: null
+            };
+            renderMazeWorkspace();
+        }
+
+        function countMazeBlocksUsed() {
+            let total = 0;
+            mazeState.program.forEach(b => {
+                total += 1;
+                if (b.type === 'repeat' && b.inner) total += 1;
+            });
+            return total;
+        }
+
+        function getMazeBlockLabel(type) {
+            if (type === 'forward') return 'maju';
+            if (type === 'turn_left') return 'belok kiri ↺';
+            if (type === 'turn_right') return 'belok kanan ↻';
+            if (type === 'repeat') return 'ulangi';
+            return type;
+        }
+
+        function renderMazeGridSVG(lvl) {
+            const cols = lvl.gridCols;
+            const rows = lvl.gridRows;
+            const cellSize = 54;
+            const width = cols * cellSize;
+            const height = rows * cellSize;
+
+            let cellsSVG = '';
+
+            // Latar belakang krem hangat seperti Blockly Maze
+            cellsSVG += `<rect x="0" y="0" width="${width}" height="${height}" fill="#F3EFE6" rx="12" />`;
+
+            for (let r = 0; r < rows; r++) {
+                for (let c = 0; c < cols; c++) {
+                    const x = c * cellSize;
+                    const y = r * cellSize;
+                    const isPath = lvl.grid[r][c] === 1;
+
+                    if (!isPath) {
+                        // Dekorasi ubin tembok samar ala peta kota Blockly Maze
+                        if ((r + c) % 2 === 0 || (r * 3 + c) % 5 === 0) {
+                            cellsSVG += `
+                                <path d="M ${x + 12} ${y + 12} H ${x + 34} V ${y + 26} H ${x + 42} V ${y + 42} H ${x + 12} Z"
+                                      fill="#EAE4D7" stroke="#DFD8C8" stroke-width="1.5" />
+                            `;
+                        }
+                    } else {
+                        // Jalur Kuning Terang dengan garis marka jalan putih putus-putus
+                        cellsSVG += `
+                            <rect x="${x + 2}" y="${y + 2}" width="${cellSize - 4}" height="${cellSize - 4}" rx="8"
+                                  fill="#FACC15" stroke="#EAB308" stroke-width="2" />
+                        `;
+                        // Sambungkan visual antar petak jalur yang bersebelahan
+                        if (c + 1 < cols && lvl.grid[r][c + 1] === 1) {
+                            cellsSVG += `<rect x="${x + cellSize - 8}" y="${y + 2}" width="16" height="${cellSize - 4}" fill="#FACC15" />`;
+                            cellsSVG += `<line x1="${x + cellSize - 6}" y1="${y + cellSize / 2}" x2="${x + cellSize + 6}" y2="${y + cellSize / 2}" stroke="#FEF9C3" stroke-width="2.5" stroke-linecap="round" />`;
+                        }
+                        if (r + 1 < rows && lvl.grid[r + 1][c] === 1) {
+                            cellsSVG += `<rect x="${x + 2}" y="${y + cellSize - 8}" width="${cellSize - 4}" height="16" fill="#FACC15" />`;
+                            cellsSVG += `<line x1="${x + cellSize / 2}" y1="${y + cellSize - 6}" x2="${x + cellSize / 2}" y2="${y + cellSize + 6}" stroke="#FEF9C3" stroke-width="2.5" stroke-linecap="round" />`;
+                        }
+                        // Marka tengah petak
+                        cellsSVG += `<line x1="${x + cellSize / 2 - 4}" y1="${y + cellSize / 2}" x2="${x + cellSize / 2 + 4}" y2="${y + cellSize / 2}" stroke="#FEF9C3" stroke-width="2.5" stroke-linecap="round" />`;
+                    }
+                }
+            }
+
+            // Pin Tujuan Merah (Goal Marker)
+            const gx = lvl.goal.x * cellSize + cellSize / 2;
+            const gy = lvl.goal.y * cellSize + cellSize / 2;
+            const goalSVG = `
+                <g transform="translate(${gx}, ${gy})">
+                    <ellipse cx="0" cy="14" rx="10" ry="4" fill="rgba(15, 23, 42, 0.22)" />
+                    <path d="M 0,13 C -9,2 -13,-4 -13,-10 A 13,13 0 1,1 13,-10 C 13,-4 9,2 0,13 Z" fill="#EF4444" stroke="#991B1B" stroke-width="2" />
+                    <circle cx="0" cy="-10" r="5" fill="#FEF08A" />
+                </g>
+            `;
+
+            // Karakter Navigasi Hijau-Oranye (Mirip Pegman / Penanda Arah di Gambar)
+            const cx = mazeState.charX * cellSize + cellSize / 2;
+            const cy = mazeState.charY * cellSize + cellSize / 2;
+            // dir: 0=Atas(-90deg), 1=Kanan(0deg), 2=Bawah(90deg), 3=Kiri(180deg)
+            const angleMap = { 0: -90, 1: 0, 2: 90, 3: 180 };
+            const rot = angleMap[mazeState.charDir] || 0;
+
+            const charSVG = `
+                <g transform="translate(${cx}, ${cy}) rotate(${rot})" style="transition: transform 0.25s ease;">
+                    <!-- Bayangan -->
+                    <ellipse cx="0" cy="6" rx="15" ry="11" fill="rgba(15, 23, 42, 0.2)" />
+                    <!-- Badan Hijau dengan Moncong Penunjuk Arah ke Kanan -->
+                    <path d="M -12,-11 L 4,-11 L 21,0 L 4,11 L -12,11 A 11,11 0 0,1 -12,-11 Z" fill="#16A34A" stroke="#14532D" stroke-width="2" />
+                    <!-- Kepala / Helm Oranye-Kuning -->
+                    <circle cx="-3" cy="0" r="7.5" fill="#F97316" stroke="#9A3412" stroke-width="1.5" />
+                    <circle cx="-1" cy="-2" r="2.2" fill="#FEF08A" />
+                </g>
+            `;
+
+            return `
+                <svg viewBox="0 0 ${width} ${height}" class="w-full max-w-[340px] mx-auto rounded-2xl border-2 border-stone-300 shadow-inner bg-[#F3EFE6]">
+                    ${cellsSVG}
+                    ${goalSVG}
+                    ${charSVG}
+                </svg>
+            `;
+        }
+
+        function renderMazeWorkspace() {
+            const lvl = LEVELS[currentLevelIndex];
+            const workspace = document.getElementById('game-workspace');
+            const usedBlocks = countMazeBlocksUsed();
+            const remainingBlocks = Math.max(0, lvl.maxBlocks - usedBlocks);
+
+            // Daftar blok di palet
+            const paletteHTML = lvl.availableBlocks.map(bType => {
+                const isLoop = bType === 'repeat';
+                const bgClass = isLoop
+                    ? 'bg-emerald-600 hover:bg-emerald-500 text-white'
+                    : 'bg-purple-600 hover:bg-purple-500 text-white';
+
+                return `
+                    <button
+                        type="button"
+                        draggable="${!mazeState.isRunning && !levelSolved && remainingBlocks > 0}"
+                        ondragstart="handleMazePaletteDragStart(event, '${bType}')"
+                        onclick="addMazeBlock('${bType}')"
+                        ${mazeState.isRunning || levelSolved || remainingBlocks <= 0 ? 'disabled' : ''}
+                        class="blockly-piece ${bgClass} w-full text-left px-4 py-3 font-bold text-sm shadow-sm flex items-center justify-between disabled:opacity-45 disabled:cursor-not-allowed cursor-pointer"
+                    >
+                        <span class="flex items-center gap-2">
+                            ${bType === 'forward' ? '<span>⬆</span><span>maju</span>' : ''}
+                            ${bType === 'turn_left' ? '<span>↺</span><span>belok kiri ↺</span>' : ''}
+                            ${bType === 'turn_right' ? '<span>↻</span><span>belok kanan ↻</span>' : ''}
+                            ${bType === 'repeat' ? '<span>🔁</span><span>ulangi ... kali</span>' : ''}
+                        </span>
+                        <span class="text-xs bg-white/20 px-2 py-0.5 rounded-md">+ Tambah</span>
+                    </button>
+                `;
+            }).join('');
+
+            // Daftar blok tersusun di area program
+            let programHTML = '';
+            if (mazeState.program.length === 0) {
+                programHTML = `
+                    <div class="h-48 border-2 border-dashed border-slate-300 rounded-2xl flex flex-col items-center justify-center text-center p-4 text-slate-400">
+                        <span class="text-3xl mb-1.5">🧩</span>
+                        <p class="text-xs sm:text-sm font-bold text-slate-500">Area Program Masih Kosong</p>
+                        <p class="text-xs mt-1">Klik atau seret blok perintah dari palet di sebelah kiri ke sini.</p>
+                    </div>
+                `;
+            } else {
+                programHTML = `
+                    <div class="space-y-1">
+                        ${mazeState.program.map((blk, idx) => {
+                            const isActive = mazeState.activeBlockId === blk.id;
+                            const activeClass = isActive ? 'blockly-active-exec' : '';
+
+                            if (blk.type === 'repeat') {
+                                return `
+                                <div
+                                    draggable="${!mazeState.isRunning && !levelSolved}"
+                                    ondragstart="handleMazeProgramDragStart(event, ${idx})"
+                                    ondragover="event.preventDefault()"
+                                    ondrop="handleMazeProgramDrop(event, ${idx})"
+                                    class="rounded-2xl bg-emerald-600 text-white p-3 shadow-sm transition-all ${activeClass}"
+                                >
+                                    <div class="flex items-center justify-between gap-2 mb-2">
+                                        <div class="flex items-center gap-1.5 font-bold text-sm">
+                                            <span>🔁 ulangi</span>
+                                            <select
+                                                onchange="updateMazeRepeatCount(${idx}, this.value)"
+                                                ${mazeState.isRunning || levelSolved ? 'disabled' : ''}
+                                                class="bg-emerald-800 text-amber-300 font-display font-bold px-2 py-0.5 rounded-lg border border-emerald-400 focus:outline-none text-sm"
+                                            >
+                                                ${[2, 3, 4, 5].map(n => `<option value="${n}" ${blk.count === n ? 'selected' : ''}>${n}</option>`).join('')}
+                                            </select>
+                                            <span>kali</span>
+                                        </div>
+                                        <div class="flex items-center gap-1">
+                                            <button type="button" onclick="moveMazeBlock(${idx}, -1)" ${idx === 0 || mazeState.isRunning || levelSolved ? 'disabled' : ''} class="w-6 h-6 rounded-md bg-white/15 hover:bg-white/25 disabled:opacity-30 text-xs font-bold">▲</button>
+                                            <button type="button" onclick="moveMazeBlock(${idx}, 1)" ${idx === mazeState.program.length - 1 || mazeState.isRunning || levelSolved ? 'disabled' : ''} class="w-6 h-6 rounded-md bg-white/15 hover:bg-white/25 disabled:opacity-30 text-xs font-bold">▼</button>
+                                            <button type="button" onclick="removeMazeBlock(${idx})" ${mazeState.isRunning || levelSolved ? 'disabled' : ''} class="w-6 h-6 rounded-md bg-rose-500/80 hover:bg-rose-500 disabled:opacity-30 text-xs font-bold" title="Hapus Blok">✕</button>
+                                        </div>
+                                    </div>
+                                    <!-- Slot Perintah di Dalam Blok Ulangi -->
+                                    <div class="ml-3 pl-3 border-l-4 border-emerald-400/70">
+                                        <div class="bg-purple-600 rounded-xl px-3 py-2 flex items-center justify-between gap-2 shadow-inner">
+                                            <span class="text-xs font-bold text-purple-100">lakukan:</span>
+                                            <select
+                                                onchange="updateMazeRepeatInner(${idx}, this.value)"
+                                                ${mazeState.isRunning || levelSolved ? 'disabled' : ''}
+                                                class="bg-purple-800 text-white font-bold px-2.5 py-1 rounded-lg border border-purple-400 text-xs sm:text-sm focus:outline-none"
+                                            >
+                                                <option value="forward" ${blk.inner === 'forward' ? 'selected' : ''}>⬆ maju</option>
+                                                <option value="turn_left" ${blk.inner === 'turn_left' ? 'selected' : ''}>↺ belok kiri</option>
+                                                <option value="turn_right" ${blk.inner === 'turn_right' ? 'selected' : ''}>↻ belok kanan</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>`;
+                            }
+
+                            return `
+                            <div
+                                draggable="${!mazeState.isRunning && !levelSolved}"
+                                ondragstart="handleMazeProgramDragStart(event, ${idx})"
+                                ondragover="event.preventDefault()"
+                                ondrop="handleMazeProgramDrop(event, ${idx})"
+                                class="blockly-piece bg-purple-600 text-white px-4 py-3 shadow-xs flex items-center justify-between gap-2 ${activeClass}"
+                            >
+                                <div class="flex items-center gap-2 font-bold text-sm">
+                                    <span class="w-5 h-5 rounded-full bg-white/20 text-[11px] flex items-center justify-center">${idx + 1}</span>
+                                    <span>${getMazeBlockLabel(blk.type)}</span>
+                                </div>
+                                <div class="flex items-center gap-1">
+                                    <button type="button" onclick="moveMazeBlock(${idx}, -1)" ${idx === 0 || mazeState.isRunning || levelSolved ? 'disabled' : ''} class="w-6 h-6 rounded-md bg-white/15 hover:bg-white/25 disabled:opacity-30 text-xs font-bold">▲</button>
+                                    <button type="button" onclick="moveMazeBlock(${idx}, 1)" ${idx === mazeState.program.length - 1 || mazeState.isRunning || levelSolved ? 'disabled' : ''} class="w-6 h-6 rounded-md bg-white/15 hover:bg-white/25 disabled:opacity-30 text-xs font-bold">▼</button>
+                                    <button type="button" onclick="removeMazeBlock(${idx})" ${mazeState.isRunning || levelSolved ? 'disabled' : ''} class="w-6 h-6 rounded-md bg-rose-500/80 hover:bg-rose-500 disabled:opacity-30 text-xs font-bold" title="Hapus Blok">✕</button>
+                                </div>
+                            </div>`;
+                        }).join('')}
+                    </div>
+                `;
+            }
+
+            workspace.innerHTML = `
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
+                    <!-- KOLOM KIRI: PETA LABIRIN & TOMBOL EKSEKUSI -->
+                    <div class="lg:col-span-5 bg-white rounded-3xl p-4 sm:p-5 border border-slate-200 shadow-xs flex flex-col items-center">
+                        <div class="w-full flex items-center justify-between mb-3">
+                            <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">Peta Labirin</span>
+                            <span class="text-xs font-bold px-2.5 py-1 rounded-full ${
+                                remainingBlocks === 0 ? 'bg-amber-100 text-amber-800' : 'bg-purple-100 text-purple-800'
+                            }">
+                                Sisa Kuota: ${remainingBlocks} blok
+                            </span>
+                        </div>
+
+                        ${renderMazeGridSVG(lvl)}
+
+                        <!-- Tombol Jalankan / Reset (Ala Blockly Games) -->
+                        <div class="w-full max-w-[340px] mt-4 flex items-center gap-2.5">
+                            ${mazeState.status === 'idle' && !mazeState.isRunning ? `
+                                <button type="button" onclick="runMazeProgram()" ${mazeState.program.length === 0 ? 'disabled' : ''}
+                                    class="btn-game flex-1 bg-rose-500 hover:bg-rose-400 disabled:bg-slate-300 disabled:cursor-not-allowed text-white font-display font-bold py-3 px-4 rounded-2xl text-sm sm:text-base flex items-center justify-center gap-2">
+                                    <span>▶ Jalankan Program</span>
+                                </button>
+                            ` : `
+                                <button type="button" onclick="resetMazePosition()"
+                                    class="btn-game flex-1 bg-rose-600 hover:bg-rose-500 text-white font-display font-bold py-3 px-4 rounded-2xl text-sm sm:text-base flex items-center justify-center gap-2">
+                                    <span>✕ Reset Posisi</span>
+                                </button>
+                            `}
+                        </div>
+                    </div>
+
+                    <!-- KOLOM TENGAH: PALET BLOK PERINTAH -->
+                    <div class="lg:col-span-3 bg-slate-200/75 rounded-3xl p-4 border border-slate-300/80">
+                        <h4 class="font-display font-bold text-slate-700 text-sm mb-1">Blok Perintah</h4>
+                        <p class="text-[11px] text-slate-500 mb-3">Klik atau seret ke Area Program:</p>
+                        <div class="space-y-2.5">
+                            ${paletteHTML}
+                        </div>
+                    </div>
+
+                    <!-- KOLOM KANAN: AREA SUSUNAN PROGRAM -->
+                    <div
+                        ondragover="event.preventDefault()"
+                        ondrop="handleMazeWorkspaceDrop(event)"
+                        class="lg:col-span-4 bg-white rounded-3xl p-4 border-2 border-purple-200 min-h-[290px] flex flex-col justify-between shadow-xs"
+                    >
+                        <div>
+                            <div class="flex items-center justify-between mb-3 pb-2 border-b border-slate-100">
+                                <h4 class="font-display font-bold text-slate-800 text-sm">Area Program</h4>
+                                <div class="flex items-center gap-2">
+                                    <span class="text-xs font-bold text-purple-700 bg-purple-50 px-2.5 py-0.5 rounded-full">
+                                        ${usedBlocks} / ${lvl.maxBlocks} blok
+                                    </span>
+                                    ${mazeState.program.length > 0 && !mazeState.isRunning && !levelSolved ? `
+                                        <button type="button" onclick="clearMazeProgram()" class="text-xs font-bold text-rose-600 hover:underline">
+                                            Kosongkan
+                                        </button>
+                                    ` : ''}
+                                </div>
+                            </div>
+                            ${programHTML}
+                        </div>
+                        <p class="text-[11px] text-slate-400 mt-4 pt-2 border-t border-slate-100 text-center">
+                            Target efisien: ≤ ${lvl.idealBlocks} blok untuk hasil terbaik
+                        </p>
+                    </div>
+                </div>
+            `;
+        }
+
+        function addMazeBlock(type) {
+            if (mazeState.isRunning || levelSolved) return;
+            const lvl = LEVELS[currentLevelIndex];
+            const needed = type === 'repeat' ? 2 : 1;
+            if (countMazeBlocksUsed() + needed > lvl.maxBlocks) {
+                SoundFX.error();
+                showFeedback(false, 'Kuota Blok Penuh', `Level ini membatasi maksimal ${lvl.maxBlocks} blok. Hapus blok yang tidak perlu jika ingin menambah blok baru.`);
+                return;
+            }
+
+            if (mazeState.status !== 'idle') {
+                resetMazePosition(true);
+            }
+
+            const newBlock = { id: nextMazeBlockId++, type };
+            if (type === 'repeat') {
+                newBlock.count = 3;
+                newBlock.inner = 'forward';
+            }
+            mazeState.program.push(newBlock);
+            SoundFX.click();
+            hideFeedback();
+            renderMazeWorkspace();
+        }
+
+        function removeMazeBlock(idx) {
+            if (mazeState.isRunning || levelSolved) return;
+            if (mazeState.status !== 'idle') resetMazePosition(true);
+            mazeState.program.splice(idx, 1);
+            SoundFX.click();
+            renderMazeWorkspace();
+        }
+
+        function moveMazeBlock(idx, dir) {
+            if (mazeState.isRunning || levelSolved) return;
+            const newIdx = idx + dir;
+            if (newIdx < 0 || newIdx >= mazeState.program.length) return;
+            if (mazeState.status !== 'idle') resetMazePosition(true);
+            const temp = mazeState.program[idx];
+            mazeState.program[idx] = mazeState.program[newIdx];
+            mazeState.program[newIdx] = temp;
+            SoundFX.swap();
+            renderMazeWorkspace();
+        }
+
+        function updateMazeRepeatCount(idx, val) {
+            if (mazeState.isRunning || levelSolved) return;
+            if (mazeState.status !== 'idle') resetMazePosition(true);
+            mazeState.program[idx].count = parseInt(val, 10) || 2;
+            SoundFX.click();
+        }
+
+        function updateMazeRepeatInner(idx, val) {
+            if (mazeState.isRunning || levelSolved) return;
+            if (mazeState.status !== 'idle') resetMazePosition(true);
+            mazeState.program[idx].inner = val;
+            SoundFX.click();
+        }
+
+        function clearMazeProgram() {
+            if (mazeState.isRunning || levelSolved) return;
+            mazeState.program = [];
+            resetMazePosition(true);
+            SoundFX.click();
+            hideFeedback();
+            renderMazeWorkspace();
+        }
+
+        // Drag & Drop untuk Palet & Area Program Bab 4
+        function handleMazePaletteDragStart(e, bType) {
+            mazeState.draggedPaletteType = bType;
+            mazeState.draggedProgramIdx = null;
+        }
+
+        function handleMazeProgramDragStart(e, idx) {
+            mazeState.draggedProgramIdx = idx;
+            mazeState.draggedPaletteType = null;
+        }
+
+        function handleMazeWorkspaceDrop(e) {
+            e.preventDefault();
+            if (mazeState.draggedPaletteType) {
+                const t = mazeState.draggedPaletteType;
+                mazeState.draggedPaletteType = null;
+                addMazeBlock(t);
+            }
+        }
+
+        function handleMazeProgramDrop(e, targetIdx) {
+            e.preventDefault();
+            e.stopPropagation();
+            if (mazeState.draggedProgramIdx !== null && mazeState.draggedProgramIdx !== targetIdx) {
+                const moved = mazeState.program.splice(mazeState.draggedProgramIdx, 1)[0];
+                mazeState.program.splice(targetIdx, 0, moved);
+                mazeState.draggedProgramIdx = null;
+                SoundFX.swap();
+                renderMazeWorkspace();
+            } else if (mazeState.draggedPaletteType) {
+                const t = mazeState.draggedPaletteType;
+                mazeState.draggedPaletteType = null;
+                addMazeBlock(t);
+            }
+        }
+
+        function resetMazePosition(silent = false) {
+            cleanupMazeGame();
+            const lvl = LEVELS[currentLevelIndex];
+            mazeState.charX = lvl.start.x;
+            mazeState.charY = lvl.start.y;
+            mazeState.charDir = lvl.start.dir;
+            mazeState.status = 'idle';
+            mazeState.activeBlockId = null;
+            if (!silent) {
+                SoundFX.click();
+                hideFeedback();
+                renderMazeWorkspace();
+            }
+        }
+
+        function runMazeProgram() {
+            if (mazeState.isRunning || levelSolved || mazeState.program.length === 0) return;
+
+            const lvl = LEVELS[currentLevelIndex];
+            // Reset posisi karakter ke titik awal sebelum menjalankan langkah
+            mazeState.charX = lvl.start.x;
+            mazeState.charY = lvl.start.y;
+            mazeState.charDir = lvl.start.dir;
+            mazeState.isRunning = true;
+            mazeState.status = 'running';
+            hideFeedback();
+
+            // Uraikan blok program menjadi daftar langkah atomik
+            const steps = [];
+            mazeState.program.forEach(blk => {
+                if (blk.type === 'repeat') {
+                    for (let i = 0; i < blk.count; i++) {
+                        steps.push({ action: blk.inner, blockId: blk.id });
+                    }
+                } else {
+                    steps.push({ action: blk.type, blockId: blk.id });
+                }
+            });
+
+            let stepIdx = 0;
+
+            function executeNextStep() {
+                if (!mazeState.isRunning) return;
+
+                if (stepIdx >= steps.length) {
+                    // Semua perintah selesai dijalankan, cek apakah sampai di tujuan
+                    mazeState.isRunning = false;
+                    mazeState.activeBlockId = null;
+
+                    if (mazeState.charX === lvl.goal.x && mazeState.charY === lvl.goal.y) {
+                        completeMazeLevel();
+                    } else {
+                        mazeState.status = 'short';
+                        currentAttempts++;
+                        document.getElementById('game-attempts').textContent = currentAttempts;
+                        SoundFX.error();
+                        renderMazeWorkspace();
+                        showFeedback(false, 'Belum Sampai ke Tujuan', 'Karakter berhenti sebelum mencapai pin tujuan merah. Klik "Reset Posisi" lalu tambahkan atau sesuaikan blok perintahmu!');
+                    }
+                    return;
+                }
+
+                const step = steps[stepIdx];
+                mazeState.activeBlockId = step.blockId;
+
+                if (step.action === 'turn_left') {
+                    mazeState.charDir = (mazeState.charDir + 3) % 4;
+                    SoundFX.click();
+                } else if (step.action === 'turn_right') {
+                    mazeState.charDir = (mazeState.charDir + 1) % 4;
+                    SoundFX.click();
+                } else if (step.action === 'forward') {
+                    const dx = [0, 1, 0, -1][mazeState.charDir];
+                    const dy = [-1, 0, 1, 0][mazeState.charDir];
+                    const nx = mazeState.charX + dx;
+                    const ny = mazeState.charY + dy;
+
+                    // Cek batas grid & apakah petak tujuan merupakan jalur valid (1)
+                    const inBounds = nx >= 0 && nx < lvl.gridCols && ny >= 0 && ny < lvl.gridRows;
+                    const isValidPath = inBounds && lvl.grid[ny][nx] === 1;
+
+                    if (!isValidPath) {
+                        mazeState.isRunning = false;
+                        mazeState.status = 'crashed';
+                        mazeState.activeBlockId = null;
+                        currentAttempts++;
+                        document.getElementById('game-attempts').textContent = currentAttempts;
+                        SoundFX.error();
+                        renderMazeWorkspace();
+                        showFeedback(false, 'Keluar dari Jalur Labirin!', 'Karakter menabrak batas jalur kuning. Klik "Reset Posisi" dan periksa kembali arah belokanmu!');
+                        return;
+                    }
+
+                    mazeState.charX = nx;
+                    mazeState.charY = ny;
+                    SoundFX.swap();
+                }
+
+                renderMazeWorkspace();
+
+                // Jika karakter sudah menyentuh pin tujuan tepat di tengah eksekusi, langsung menang
+                if (mazeState.charX === lvl.goal.x && mazeState.charY === lvl.goal.y && stepIdx === steps.length - 1) {
+                    mazeState.execTimer = setTimeout(() => {
+                        mazeState.isRunning = false;
+                        mazeState.activeBlockId = null;
+                        completeMazeLevel();
+                    }, 300);
+                    return;
+                }
+
+                stepIdx++;
+                mazeState.execTimer = setTimeout(executeNextStep, 430);
+            }
+
+            renderMazeWorkspace();
+            mazeState.execTimer = setTimeout(executeNextStep, 350);
+        }
+
+        function completeMazeLevel() {
+            levelSolved = true;
+            mazeState.status = 'won';
+            SoundFX.success();
+
+            const lvl = LEVELS[currentLevelIndex];
+            const earnedStars = currentAttempts === 1 ? 3 : (currentAttempts === 2 ? 2 : 1);
+            const prevStars = gameState.stars[lvl.id] || 0;
+
+            if (earnedStars > prevStars) {
+                gameState.score += (earnedStars - prevStars) * 100;
+                gameState.stars[lvl.id] = earnedStars;
+            }
+
+            const currentChapMax = getChapterMaxUnlocked(4);
+            if (lvl.id >= currentChapMax && lvl.id < 20) {
+                gameState.unlockedLevels[4] = lvl.id + 1;
+            }
+
+            saveProgress();
+            renderMazeWorkspace();
+
+            const starIcons = '⭐'.repeat(earnedStars);
+            showFeedback(true, `Berhasil Mencapai Tujuan! (${starIcons})`, lvl.explanation);
+
+            const nextBtn = document.getElementById('btn-next-level');
+            nextBtn.classList.remove('hidden');
+
+            if (areAllLevelsCompleted()) {
+                nextBtn.innerHTML = '<span>🏆 Lihat Hasil Akhir</span>';
+            } else if (lvl.id === 20) {
+                nextBtn.innerHTML = '<span>Lanjut ke Bab 5 ➡</span>';
+            } else {
+                nextBtn.innerHTML = '<span>Level Berikutnya ➡</span>';
+            }
+
+            if (typeof confetti === 'function') {
+                confetti({
+                    particleCount: 85,
+                    spread: 70,
+                    origin: { y: 0.65 }
+                });
+            }
+        }
+
+        /* ---------------- RENDER & INTERAKSI BAB 5 (MENYUSUN BLOK KATA) ---------------- */
+        function shuffleSentenceWords(words) {
+            let copy = [...words];
+            let tries = 0;
+            do {
+                for (let i = copy.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [copy[i], copy[j]] = [copy[j], copy[i]];
+                }
+                tries++;
+            } while (copy.join(' ') === words.join(' ') && tries < 15);
+            return copy;
+        }
+
+        function initSentenceGame(lvl) {
+            sentenceState = {
+                currentWords: shuffleSentenceWords(lvl.words),
+                selectedIdx: null,
+                draggedIdx: null
+            };
+            renderSentenceWorkspace();
+        }
+
+        function renderSentenceWorkspace() {
+            const lvl = LEVELS[currentLevelIndex];
+            const workspace = document.getElementById('game-workspace');
+
+            workspace.innerHTML = `
+                <div class="max-w-3xl mx-auto">
+                    <!-- Petunjuk Interaksi Singkat -->
+                    <div class="flex flex-wrap items-center justify-between gap-2 bg-fuchsia-50 border border-fuchsia-200 rounded-2xl px-4 py-2.5 mb-5 text-xs sm:text-sm font-bold text-fuchsia-900">
+                        <span>🔤 Susun Blok Kata Menjadi Kalimat Padu</span>
+                        <span class="text-fuchsia-700 font-normal">Seret blok kata atau ketuk 2 blok untuk menukar</span>
+                    </div>
+
+                    <!-- Kanvas Utama Susun Kata (Terinspirasi Gambar Referensi) -->
+                    <div class="sentence-stage-bg rounded-3xl p-6 sm:p-10 shadow-lg border-2 border-fuchsia-200 relative overflow-hidden">
+                        <!-- Garis-garis Buku Tulis di Dalam Kanvas -->
+                        <div class="bg-white/20 backdrop-blur-[2px] rounded-2xl p-5 sm:p-8 border border-white/30 shadow-inner">
+                            <div class="border-t border-slate-800/25 pt-4 pb-4 border-b border-slate-800/25">
+                                <div class="flex flex-wrap items-center gap-2.5 sm:gap-3 min-h-[58px]">
+                                    ${sentenceState.currentWords.map((word, idx) => {
+                                        const isSelected = sentenceState.selectedIdx === idx;
+                                        return `
+                                            <div
+                                                draggable="${!levelSolved}"
+                                                ondragstart="handleWordDragStart(event, ${idx})"
+                                                ondragover="handleWordDragOver(event)"
+                                                ondrop="handleWordDrop(event, ${idx})"
+                                                onclick="handleWordTap(${idx})"
+                                                class="word-tile bg-black text-white font-bold text-lg sm:text-2xl px-3.5 py-2 sm:px-4 sm:py-2.5 rounded-sm shadow-md flex items-center gap-2 select-none ${
+                                                    isSelected ? 'selected-word ring-2 ring-amber-300' : 'hover:bg-slate-900'
+                                                }"
+                                            >
+                                                <span>${word}</span>
+                                            </div>
+                                        `;
+                                    }).join('')}
+                                    <!-- Tanda Baca Akhir Kalimat -->
+                                    <span class="font-display font-extrabold text-2xl sm:text-3xl text-slate-900 select-none pl-0.5">${lvl.punctuation}</span>
+                                </div>
+                            </div>
+                            <div class="h-6 border-b border-slate-800/25"></div>
+                        </div>
+
+                        <!-- Pratinjau Kalimat & Tombol Acak Ulang -->
+                        <div class="mt-5 flex flex-col sm:flex-row items-center justify-between gap-3 bg-white/90 backdrop-blur-xs rounded-2xl px-4 py-3 shadow-xs">
+                            <div class="text-xs sm:text-sm text-slate-700 text-center sm:text-left">
+                                <span class="font-bold text-slate-500 mr-1">Kalimatmu:</span>
+                                <span class="font-bold text-slate-900">"${sentenceState.currentWords.join(' ')}${lvl.punctuation}"</span>
+                            </div>
+                            ${!levelSolved ? `
+                                <button type="button" onclick="reshuffleCurrentSentence()" class="shrink-0 text-xs font-bold text-fuchsia-700 hover:text-fuchsia-800 bg-fuchsia-100 hover:bg-fuchsia-200 px-3 py-1.5 rounded-xl transition-colors">
+                                    🔀 Acak Ulang
+                                </button>
+                            ` : ''}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function handleWordDragStart(e, idx) {
+            if (levelSolved) return;
+            sentenceState.draggedIdx = idx;
+            e.dataTransfer.effectAllowed = 'move';
+        }
+
+        function handleWordDragOver(e) {
+            e.preventDefault();
+        }
+
+        function handleWordDrop(e, targetIdx) {
+            e.preventDefault();
+            if (levelSolved || sentenceState.draggedIdx === null || sentenceState.draggedIdx === targetIdx) return;
+            const moved = sentenceState.currentWords.splice(sentenceState.draggedIdx, 1)[0];
+            sentenceState.currentWords.splice(targetIdx, 0, moved);
+            sentenceState.draggedIdx = null;
+            sentenceState.selectedIdx = null;
+            SoundFX.swap();
+            renderSentenceWorkspace();
+        }
+
+        function handleWordTap(idx) {
+            if (levelSolved) return;
+            if (sentenceState.selectedIdx === null) {
+                sentenceState.selectedIdx = idx;
+                SoundFX.click();
+                renderSentenceWorkspace();
+            } else if (sentenceState.selectedIdx === idx) {
+                sentenceState.selectedIdx = null;
+                SoundFX.click();
+                renderSentenceWorkspace();
+            } else {
+                const temp = sentenceState.currentWords[sentenceState.selectedIdx];
+                sentenceState.currentWords[sentenceState.selectedIdx] = sentenceState.currentWords[idx];
+                sentenceState.currentWords[idx] = temp;
+                sentenceState.selectedIdx = null;
+                SoundFX.swap();
+                renderSentenceWorkspace();
+            }
+        }
+
+        function reshuffleCurrentSentence() {
+            if (levelSolved) return;
+            const lvl = LEVELS[currentLevelIndex];
+            sentenceState.currentWords = shuffleSentenceWords(lvl.words);
+            sentenceState.selectedIdx = null;
+            SoundFX.swap();
+            hideFeedback();
+            renderSentenceWorkspace();
+        }
+
+        /* =========================================================================
+           8. PEMERIKSAAN JAWABAN, PETUNJUK, & SISTEM BINTANG
+           ========================================================================= */
+        function showFeedback(isSuccess, title, message) {
+            const box = document.getElementById('feedback-box');
+            const icon = document.getElementById('feedback-icon');
+            const titleEl = document.getElementById('feedback-title');
+            const msgEl = document.getElementById('feedback-message');
+
+            box.classList.remove('hidden', 'bg-emerald-50', 'border-emerald-300', 'text-emerald-900', 'bg-rose-50', 'border-rose-300', 'text-rose-900', 'bg-amber-50', 'border-amber-300', 'text-amber-900', 'animate-shake', 'animate-pop');
+
+            if (isSuccess === true) {
+                box.classList.add('bg-emerald-50', 'border-emerald-300', 'text-emerald-900', 'animate-pop');
+                icon.textContent = '🎉';
+            } else if (isSuccess === false) {
+                box.classList.add('bg-rose-50', 'border-rose-300', 'text-rose-900', 'animate-shake');
+                icon.textContent = '🤔';
+            } else {
+                // Mode Petunjuk
+                box.classList.add('bg-amber-50', 'border-amber-300', 'text-amber-900', 'animate-pop');
+                icon.textContent = '💡';
+            }
+
+            titleEl.textContent = title;
+            msgEl.textContent = message;
+        }
+
+        function hideFeedback() {
+            document.getElementById('feedback-box').classList.add('hidden');
+        }
+
+        function showHint() {
+            SoundFX.click();
+            const lvl = LEVELS[currentLevelIndex];
+            showFeedback(null, 'Petunjuk Logika', lvl.hint);
+        }
+
+        function checkAnswer() {
+            if (levelSolved) return;
+            const lvl = LEVELS[currentLevelIndex];
+
+            if (lvl.type === 'sort' || lvl.type === 'sort_bonus') {
+                const orderCorrect = isSortedAscending(currentItemsOrder);
+
+                if (lvl.type === 'sort_bonus') {
+                    if (!orderCorrect) {
+                        SoundFX.error();
+                        currentAttempts++;
+                        document.getElementById('game-attempts').textContent = currentAttempts;
+                        showFeedback(false, 'Urutan Menara Belum Tepat', 'Pastikan semua menara di atas sudah tersusun dari paling rendah di kiri ke paling tinggi di kanan.');
+                        return;
+                    }
+                    if (!selectedBonusId) {
+                        SoundFX.error();
+                        showFeedback(false, 'Pertanyaan Bonus Belum Dijawab', 'Urutan menaramu sudah benar! Sekarang pilih jawaban untuk pertanyaan bonus di bawah.');
+                        return;
+                    }
+                    if (selectedBonusId !== lvl.bonusAnswerId) {
+                        SoundFX.error();
+                        currentAttempts++;
+                        document.getElementById('game-attempts').textContent = currentAttempts;
+                        showFeedback(false, 'Jawaban Bonus Kurang Tepat', 'Urutan menara sudah benar! Coba hitung lagi dari kiri ke kanan untuk menemukan menara urutan ke-4.');
+                        return;
+                    }
+                } else {
+                    if (!orderCorrect) {
+                        SoundFX.error();
+                        currentAttempts++;
+                        document.getElementById('game-attempts').textContent = currentAttempts;
+                        showFeedback(false, 'Belum Urut, Coba Lagi!', 'Masih ada benda yang lebih tinggi berada di sebelah kiri benda yang lebih pendek. Periksa kembali posisinya!');
+                        return;
+                    }
+                }
+
+                // Jika Benar
+                completeCurrentLevel();
+
+            } else if (lvl.type === 'train') {
+                if (!selectedTrainOption) {
+                    SoundFX.error();
+                    showFeedback(false, 'Pilih Jawaban Dulu', 'Klik salah satu pilihan susunan balok (A, B, C, atau D) sebelum menekan Cek Jawaban.');
+                    return;
+                }
+
+                if (selectedTrainOption !== lvl.correctOption) {
+                    SoundFX.error();
+                    currentAttempts++;
+                    document.getElementById('game-attempts').textContent = currentAttempts;
+                    showFeedback(false, 'Pola Belum Cocok', 'Perhatikan kembali perubahan jumlah titik dan posisi lapisan dari Trailer 1 ke Trailer 2 dan 3.');
+                    return;
+                }
+
+                // Jika Benar
+                completeCurrentLevel();
+
+            } else if (lvl.type === 'sentence') {
+                const userSentence = sentenceState.currentWords.join(' ');
+                const targetSentence = lvl.words.join(' ');
+
+                if (userSentence !== targetSentence) {
+                    SoundFX.error();
+                    currentAttempts++;
+                    document.getElementById('game-attempts').textContent = currentAttempts;
+                    showFeedback(false, 'Susunan Kata Belum Tepat', 'Kalimatmu masih belum padu. Perhatikan kata berhuruf kapital di awal kalimat dan urutan Subjek - Predikat - Objek!');
+                    return;
+                }
+
+                // Jika Benar
+                completeCurrentLevel();
+            }
+        }
+
+        function areAllLevelsCompleted() {
+            return LEVELS.every(l => (gameState.stars[l.id] || 0) > 0);
+        }
+
+        function completeCurrentLevel() {
+            levelSolved = true;
+            SoundFX.success();
+
+            const lvl = LEVELS[currentLevelIndex];
+            const earnedStars = currentAttempts === 1 ? 3 : (currentAttempts === 2 ? 2 : 1);
+            const prevStars = gameState.stars[lvl.id] || 0;
+
+            if (earnedStars > prevStars) {
+                gameState.score += (earnedStars - prevStars) * 100;
+                gameState.stars[lvl.id] = earnedStars;
+            }
+
+            // Buka level berikutnya di dalam bab yang sama (1-5 Bab 1, 6-10 Bab 2, 11-15 Bab 3, 16-20 Bab 4, 21-25 Bab 5)
+            const chapterEndId = lvl.chapter === 1 ? 5 : (lvl.chapter === 2 ? 10 : (lvl.chapter === 3 ? 15 : (lvl.chapter === 4 ? 20 : 25)));
+            const currentChapMax = getChapterMaxUnlocked(lvl.chapter);
+            if (lvl.id >= currentChapMax && lvl.id < chapterEndId) {
+                gameState.unlockedLevels[lvl.chapter] = lvl.id + 1;
+            }
+
+            saveProgress();
+
+            // Render ulang workspace agar kartu terkunci rapi
+            if (lvl.type === 'sort' || lvl.type === 'sort_bonus') renderSortingWorkspace();
+            else if (lvl.type === 'train') renderTrainWorkspace();
+            else if (lvl.type === 'sentence') renderSentenceWorkspace();
+
+            const starIcons = '⭐'.repeat(earnedStars);
+            showFeedback(true, `Jawaban Benar! (${starIcons})`, lvl.explanation);
+
+            document.getElementById('btn-check').classList.add('hidden');
+            const nextBtn = document.getElementById('btn-next-level');
+            nextBtn.classList.remove('hidden');
+
+            if (areAllLevelsCompleted()) {
+                nextBtn.innerHTML = '<span>🏆 Lihat Hasil Akhir</span>';
+            } else if (lvl.id === 5) {
+                nextBtn.innerHTML = '<span>Lanjut ke Bab 2 ➡</span>';
+            } else if (lvl.id === 10) {
+                nextBtn.innerHTML = '<span>Lanjut ke Bab 3 ➡</span>';
+            } else if (lvl.id === 15) {
+                nextBtn.innerHTML = '<span>Lanjut ke Bab 4 ➡</span>';
+            } else if (lvl.id === 20) {
+                nextBtn.innerHTML = '<span>Lanjut ke Bab 5 ➡</span>';
+            } else {
+                nextBtn.innerHTML = '<span>Level Berikutnya ➡</span>';
+            }
+
+            // Efek Konfeti
+            if (typeof confetti === 'function') {
+                confetti({
+                    particleCount: 75,
+                    spread: 65,
+                    origin: { y: 0.65 }
+                });
+            }
+        }
+
+        function goToNextLevel() {
+            // Jika seluruh 25 level sudah memiliki bintang, tampilkan layar kemenangan akhir
+            if (areAllLevelsCompleted()) {
+                navigateTo('victory');
+                if (typeof confetti === 'function') {
+                    confetti({ particleCount: 130, spread: 90, origin: { y: 0.6 } });
+                }
+                return;
+            }
+
+            const lvl = LEVELS[currentLevelIndex];
+
+            // Jika di akhir Bab 5 (Level 25) namun bab lain masih ada yang belum selesai, arahkan ke bab yang belum selesai
+            if (lvl.id === 25) {
+                playNextUnlocked();
+                return;
+            }
+
+            if (currentLevelIndex < LEVELS.length - 1) {
+                startLevel(currentLevelIndex + 1);
+            } else {
+                navigateTo('map');
+            }
+        }
+
+        /* =========================================================================
+           9. MODAL RESET PROGRES
+           ========================================================================= */
+        function openResetModal() {
+            SoundFX.click();
+            document.getElementById('modal-reset').classList.remove('hidden');
+        }
+
+        function closeResetModal() {
+            SoundFX.click();
+            document.getElementById('modal-reset').classList.add('hidden');
+        }
+
+        function confirmResetProgress() {
+            cleanupTypingGame();
+            cleanupMazeGame();
+            gameState = {
+                unlockedLevels: { 1: 1, 2: 6, 3: 11, 4: 16, 5: 21 },
+                stars: {},
+                score: 0
+            };
+            saveProgress();
+            closeResetModal();
+            renderLevelMap();
+        }
+
+        /* =========================================================================
+           10. INISIALISASI SAAT HALAMAN DIMUAT
+           ========================================================================= */
+        window.onload = function () {
+            loadProgress();
+            renderLevelMap();
+        };
+    </script>
+</body>
+</html>
