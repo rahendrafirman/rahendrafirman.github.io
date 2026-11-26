@@ -247,7 +247,7 @@
                     </span>
                     <h2 class="text-2xl sm:text-4xl font-bold mb-2 leading-tight">Asah Logikamu Seperti Ilmuwan Komputer!</h2>
                     <p class="text-sky-100 text-sm sm:text-base mb-5 leading-relaxed">
-                        Kamu bebas memulai petualangan dari <strong>Bab 1</strong>, <strong>Bab 2</strong>, <strong>Bab 3</strong>, <strong>Bab 4</strong>, maupun langsung menyusun blok kata di <strong>Bab 5</strong>! Kumpulkan semua bintang untuk menjadi Master Berpikir Komputasional.
+                        <strong>Game edukatif untuk anak sekolah dasar dan menengah</strong> yang dirancang untuk melatih keterampilan berpikir komputasional, pemecahan masalah, pengenalan pola, ketangkasan mengetik, algoritma pemrograman visual, serta penyusunan struktur kalimat secara interaktif dan menyenangkan. Kamu bebas memilih bab mana saja untuk mulai berpetualang dan mengumpulkan seluruh bintang! Dibuat oleh <a href="https://hendrabattousai.github.io/" target="_blank" rel="noopener noreferrer" class="underline decoration-amber-300 decoration-2 font-bold text-amber-200 hover:text-white transition-colors">Rahendra Firman Sunartama, S.Kom</a>.
                     </p>
                     <div class="flex flex-wrap items-center gap-3">
                         <button onclick="playNextUnlocked()" class="btn-game bg-amber-400 hover:bg-amber-300 text-slate-900 font-display font-bold px-6 py-3 rounded-2xl text-base flex items-center gap-2">
@@ -849,7 +849,7 @@
         }
 
         /* =========================================================================
-           4. DATA 10 LEVEL PERMAINAN (2 BAB X 5 LEVEL)
+           4. DATA 25 LEVEL PERMAINAN (5 BAB X 5 LEVEL)
            ========================================================================= */
         const LEVELS = [
             // ---------------- BAB 1: PENGURUTAN & KLASIFIKASI ----------------
@@ -1069,12 +1069,12 @@
                 type: 'typing',
                 title: 'Kata Dasar 3 Huruf',
                 shortDesc: 'Ketik 8 kata bahasa Indonesia (3 huruf) sebelum mengenai karakter.',
-                instruction: 'Ketik kata bahasa Indonesia 3 huruf yang jatuh dengan tepat lalu tekan Enter (atau tombol Kirim). Jika salah ketik atau kata mengenai karakter kuning, nyawa berkurang 1 dari 3!',
-                hint: 'Mulai ketik kata 3 huruf yang posisinya paling rendah terlebih dahulu. Huruf yang cocok akan otomatis disorot hijau.',
+                instruction: 'Ketik kata bahasa Indonesia 3 huruf yang jatuh dengan tepat — kata akan otomatis terbaca begitu ketikanmu cocok! Jika salah menekan Enter atau kata mengenai karakter kuning, nyawa berkurang 1 dari 3.',
+                hint: 'Mulai ketik kata 3 huruf yang posisinya paling rendah terlebih dahulu. Begitu semua huruf cocok, kata otomatis hilang tanpa perlu menekan Enter.',
                 explanation: 'Hebat! Ketepatan mengetik kata singkat bahasa Indonesia melatih fokus jari pada papan ketik.',
                 targetWords: 8,
-                spawnIntervalMs: 2400,
-                fallSpeed: 38,
+                spawnIntervalMs: 3200,
+                fallSpeed: 22,
                 maxActive: 3,
                 words: ['air', 'api', 'ibu', 'jam', 'tas', 'rak', 'pos', 'peta', 'dua', 'iga', 'kue', 'obi'].filter(w => w.length === 3).concat(['ban', 'cat', 'gol', 'hutan'.slice(0,3), 'ikan'.slice(0,3), 'kaki'.slice(0,3)])
             },
@@ -1084,12 +1084,12 @@
                 type: 'typing',
                 title: 'Kata Logika 4 Huruf',
                 shortDesc: 'Ketik 10 kata bahasa Indonesia (4 huruf) dengan teliti.',
-                instruction: 'Ketik setiap kata bahasa Indonesia 4 huruf yang jatuh dan tekan Enter. Hati-hati jangan sampai salah ejaan agar 3 nyawamu tetap aman!',
-                hint: 'Perhatikan setiap huruf sebelum menekan Enter. Salah satu huruf saja akan mengurangi 1 nyawa.',
+                instruction: 'Ketik setiap kata bahasa Indonesia 4 huruf yang jatuh — kata langsung terbaca otomatis saat ketikanmu benar! Hati-hati jangan sampai kata menyentuh karakter kuning.',
+                hint: 'Perhatikan setiap huruf yang diketik. Begitu kata selesai ditulis dengan tepat, skor langsung bertambah otomatis.',
                 explanation: 'Bagus sekali! Kamu mampu mengenali dan mengetik kata 4 huruf bahasa Indonesia dengan akurat.',
                 targetWords: 10,
-                spawnIntervalMs: 2200,
-                fallSpeed: 46,
+                spawnIntervalMs: 3000,
+                fallSpeed: 27,
                 maxActive: 3,
                 words: ['buku', 'data', 'pola', 'kode', 'meja', 'bola', 'kota', 'hari', 'jari', 'pintu'.slice(0,4), 'roda', 'sains'.slice(0,4), 'akar', 'batu', 'daun']
             },
@@ -1099,12 +1099,12 @@
                 type: 'typing',
                 title: 'Kata Cerdas 5 Huruf',
                 shortDesc: 'Ketik 12 kata bahasa Indonesia (5 huruf) yang jatuh.',
-                instruction: 'Kecepatan meningkat! Ketik 12 kata bahasa Indonesia 5 huruf sebelum menyentuh karakter kuning di bawah.',
-                hint: 'Fokus pada satu kata yang paling dekat dengan karakter kuning, ketik lengkap, lalu tekan Enter.',
+                instruction: 'Kecepatan meningkat! Ketik 12 kata bahasa Indonesia 5 huruf sebelum menyentuh karakter kuning di bawah (otomatis terbaca saat benar).',
+                hint: 'Fokus pada satu kata yang paling dekat dengan karakter kuning dan ketik lengkap seluruh hurufnya.',
                 explanation: 'Luar biasa! Refleks dan ketelitianmu dalam mengetik kata 5 huruf bahasa Indonesia semakin tajam.',
                 targetWords: 12,
-                spawnIntervalMs: 2050,
-                fallSpeed: 54,
+                spawnIntervalMs: 2800,
+                fallSpeed: 32,
                 maxActive: 4,
                 words: ['angka', 'huruf', 'kunci', 'layar', 'papan', 'rumah', 'surat', 'taman', 'waktu', 'warna', 'cahaya'.slice(0,5), 'gerak', 'jalur', 'kelas', 'pohon']
             },
@@ -1114,12 +1114,12 @@
                 type: 'typing',
                 title: 'Campuran 3, 4, & 5 Huruf',
                 shortDesc: 'Ketik 14 kata bahasa Indonesia campuran 3, 4, dan 5 huruf.',
-                instruction: 'Panjang kata kini bervariasi! Jaga konsentrasi dan ketik 14 kata bahasa Indonesia campuran 3, 4, dan 5 huruf dengan benar.',
-                hint: 'Perhatikan panjang setiap kata (3, 4, atau 5 huruf). Jangan terburu-buru menekan Enter jika belum lengkap.',
+                instruction: 'Panjang kata kini bervariasi! Jaga konsentrasi dan ketik 14 kata bahasa Indonesia campuran 3, 4, dan 5 huruf — otomatis terbaca begitu seluruh huruf cocok.',
+                hint: 'Perhatikan panjang setiap kata (3, 4, atau 5 huruf). Kata akan langsung hilang begitu huruf terakhir diketik dengan benar.',
                 explanation: 'Mengagumkan! Kamu berhasil menjaga akurasi tinggi pada variasi panjang kata bahasa Indonesia.',
                 targetWords: 14,
-                spawnIntervalMs: 1950,
-                fallSpeed: 60,
+                spawnIntervalMs: 2200,
+                fallSpeed: 48,
                 maxActive: 4,
                 words: ['air', 'api', 'tas', 'jam', 'buku', 'data', 'pola', 'kode', 'roda', 'daun', 'angka', 'kunci', 'layar', 'jalur', 'pohon']
             },
@@ -1129,12 +1129,12 @@
                 type: 'typing',
                 title: 'Tantangan Kata & Tanda Baca',
                 shortDesc: 'Ujian akhir: 15 kata 3-4 huruf disertai tanda baca (! ? . ,).',
-                instruction: 'Tantangan Terakhir Bab 3! Ketik 15 kata bahasa Indonesia (3–4 huruf) lengkap dengan tanda baca di akhirnya sebelum mengenai karakter kuning!',
+                instruction: 'Tantangan Terakhir Bab 3! Ketik 15 kata bahasa Indonesia (3–4 huruf) lengkap dengan tanda baca di akhirnya — otomatis terbaca saat tanda baca terakhir diketik!',
                 hint: 'Perhatikan tanda baca di akhir kata seperti seru (!), tanya (?), titik (.), atau koma (,). Gunakan tombol Shift bila perlu.',
                 explanation: 'Sempurna! Kamu menguasai ketepatan huruf sekaligus tanda baca dalam bahasa Indonesia!',
                 targetWords: 15,
-                spawnIntervalMs: 1950,
-                fallSpeed: 62,
+                spawnIntervalMs: 2100,
+                fallSpeed: 52,
                 maxActive: 4,
                 words: ['ayo!', 'apa?', 'ini.', 'itu,', 'ada!', 'mau?', 'bisa!', 'coba.', 'mari,', 'siap?', 'data.', 'kode!', 'pola,', 'cari?', 'gas!']
             },
@@ -2122,7 +2122,7 @@
                                         autocorrect="off"
                                         autocapitalize="off"
                                         spellcheck="false"
-                                        placeholder="Ketik kata jatuh di sini lalu Enter..."
+                                        placeholder="Ketik kata jatuh di sini (otomatis terbaca)..."
                                         oninput="handleTypingInput(this.value)"
                                         onkeydown="handleTypingKeyDown(event)"
                                         class="w-full h-11 px-4 rounded-2xl border-2 border-slate-200 focus:border-sky-500 focus:outline-none font-bold text-center text-base sm:text-lg tracking-wide text-slate-800 bg-slate-50/70 focus:bg-white transition-colors"
@@ -2322,6 +2322,37 @@
 
         function handleTypingInput(val) {
             if (!typingState.active || typingState.paused || typingState.gameOver || levelSolved) return;
+
+            const typed = val.trim().toLowerCase();
+            if (typed.length > 0) {
+                // Cek otomatis apakah ketikan saat ini sudah persis sama dengan salah satu kata yang sedang jatuh
+                const matchingWords = typingState.fallingWords
+                    .filter(w => w.text.toLowerCase() === typed)
+                    .sort((a, b) => b.y - a.y);
+
+                if (matchingWords.length > 0) {
+                    const inputEl = document.getElementById('typing-input');
+                    const target = matchingWords[0];
+                    typingState.fallingWords = typingState.fallingWords.filter(w => w.id !== target.id);
+                    typingState.completedCount++;
+                    typingState.sessionScore += target.text.length * 10;
+
+                    if (inputEl) inputEl.value = '';
+                    SoundFX.swap();
+                    triggerCharacterEatEffect(target.x, target.y);
+                    updateTypingHUD();
+                    renderFallingWordsDOM();
+
+                    const lvl = LEVELS[currentLevelIndex];
+                    if (typingState.completedCount >= lvl.targetWords) {
+                        completeTypingLevel();
+                    } else {
+                        hideFeedback();
+                    }
+                    return;
+                }
+            }
+
             renderFallingWordsDOM();
         }
 
